@@ -1,727 +1,191 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<!--
-	Copyright 2002-2013 the original author or authors.
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
 
-	Licensed under the Apache License, Version 2.0 (the "License");
-	you may not use this file except in compliance with the License.
-	You may obtain a copy of the License at
-
-	http://www.apache.org/licenses/LICENSE-2.0
-
-	Unless required by applicable law or agreed to in writing, software
-	distributed under the License is distributed on an "AS IS" BASIS,
-	WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-	See the License for the specific language governing permissions and
-	limitations under the License.
--->
-
-<project xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns="http://maven.apache.org/POM/4.0.0"
-         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
     <modelVersion>4.0.0</modelVersion>
-    <groupId>com.araguacaima.braas</groupId>
-    <artifactId>parent</artifactId>
-    <version>1.0.1-SNAPSHOT</version>
-    <packaging>pom</packaging>
-    <name>Parent</name>
-    <description>Business Rules as a Service - Parent</description>
-    <url>http://maven.apache.org</url>
-
-    <licenses>
-        <license>
-            <name>Apache License, Version 2.0</name>
-            <url>http://www.apache.org/licenses/LICENSE-2.0.tnxt</url>
-            <distribution>repo</distribution>
-        </license>
-    </licenses>
-
-    <developers>
-        <developer>
-            <name>Alejandro Manuel Méndez Araguacaima</name>
-            <email>araguacaima@gmail.com</email>
-        </developer>
-    </developers>
-
-    <scm>
-        <connection>scm:git:git://github.com/araguacaima/braas.git</connection>
-        <developerConnection>scm:git:ssh://github.com:araguacaima/braas.git</developerConnection>
-        <url>https://github.com/araguacaima/braas/tree/master</url>
-    </scm>
-
-    <distributionManagement>
-        <snapshotRepository>
-            <id>ossrh</id>
-            <url>https://oss.sonatype.org/content/repositories/snapshots</url>
-        </snapshotRepository>
-        <repository>
-            <id>ossrh</id>
-            <url>https://oss.sonatype.org/service/local/staging/deploy/maven2/</url>
-        </repository>
-    </distributionManagement>
-
-    <repositories>
-        <repository>
-            <id>oss.sonatype.org-snapshot</id>
-            <url>http://oss.sonatype.org/content/repositories/snapshots</url>
-            <releases>
-                <enabled>false</enabled>
-            </releases>
-            <snapshots>
-                <enabled>true</enabled>
-            </snapshots>
-        </repository>
-    </repositories>
-
-    <properties>
-        <java.version>1.8</java.version>
-        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-        <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
-
-        <!-- maven -->
-        <maven.compiler.version>3.0</maven.compiler.version>
-        <maven.assembly.version>2.4</maven.assembly.version>
-        <maven.surefire.version>2.13</maven.surefire.version>
-        <maven.compiler.source>1.8</maven.compiler.source>
-        <maven.compiler.target>1.8</maven.compiler.target>
-        <maven.skipTests>true</maven.skipTests>
-        <minimum-maven-version>3.1</minimum-maven-version>
-        <org.apache.maven.plugins-maven-source-plugin>3.0.1</org.apache.maven.plugins-maven-source-plugin>
-        <org.apache.maven.plugins-maven-javadoc-plugin>3.0.0-M1</org.apache.maven.plugins-maven-javadoc-plugin>
-        <org.apache.maven.plugins-maven-compiler-plugin>3.6.2</org.apache.maven.plugins-maven-compiler-plugin>
-        <org.apache.maven.plugins-maven-surefire-plugin>2.20</org.apache.maven.plugins-maven-surefire-plugin>
-        <org.apache.maven.plugins-maven-enforcer-plugin>3.0.0-M1</org.apache.maven.plugins-maven-enforcer-plugin>
-        <org.apache.maven.plugin-maven-jar-plugin>3.0.2</org.apache.maven.plugin-maven-jar-plugin>
-        <org.apache.maven.plugin-maven-dependency-plugin>3.0.1</org.apache.maven.plugin-maven-dependency-plugin>
-
-        <org.codehaus.mojo-aspectj-maven-plugin>1.8</org.codehaus.mojo-aspectj-maven-plugin>
-        <org.apache.maven.plugins-maven-jar-plugin>3.0.2</org.apache.maven.plugins-maven-jar-plugin>
-
-        <!-- maven-compiler-plugins -->
-        <org.apache.maven.plugins-maven-compiler-plugin>3.8.0</org.apache.maven.plugins-maven-compiler-plugin>
-        <org.apache.maven.plugin-maven-source-plugin>3.0.1</org.apache.maven.plugin-maven-source-plugin>
-        <org.apache.maven.plugin-maven-surefire-plugin>2.22.2</org.apache.maven.plugin-maven-surefire-plugin>
-        <org.apache.maven.plugin-maven-jar-plugin>2.4</org.apache.maven.plugin-maven-jar-plugin>
-
-        <!-- deployment -->
-        <org.sonatype.plugins-nexus-staging-maven-plugin>1.6.8</org.sonatype.plugins-nexus-staging-maven-plugin>
-        <org.apache.maven.plugins-maven-gpg-plugin>1.6</org.apache.maven.plugins-maven-gpg-plugin>
-        <org.apache.maven.plugins-maven-release-plugin>2.5.3</org.apache.maven.plugins-maven-release-plugin>
-
-        <!-- Dependencies -->
-        <org.mockito-mockito-core>1.9.5</org.mockito-mockito-core>
-        <junit-junit>4.12</junit-junit>
-        <org.apache.commons-beanutils>1.9.1</org.apache.commons-beanutils>
-        <drools.version>7.19.0.Final</drools.version>
-        <com.araguacaima-commons-utils>1.0.1-SNAPSHOT</com.araguacaima-commons-utils>
-        <org.apache.commons-commons-collections4>4.2</org.apache.commons-commons-collections4>
-        <io.codearte.jfairy-jfairy>0.5.9</io.codearte.jfairy-jfairy>
-        <slf4j.version>1.7.26</slf4j.version>
-        <logback.version>1.2.3</logback.version>
-        <com.google.api-client-google-api-client>1.28.0</com.google.api-client-google-api-client>
-        <com.google.oauth-client-google-oauth-client-jetty>1.28.0</com.google.oauth-client-google-oauth-client-jetty>
-        <com.google.apis-google-api-services-sheets>v4-rev571-1.25.0</com.google.apis-google-api-services-sheets>
-        <com.google.apis-google-api-services-drive>v3-rev157-1.25.0</com.google.apis-google-api-services-drive>
-        <com.google.oauth-client-google-oauth-client-servlet>1.23.0
-        </com.google.oauth-client-google-oauth-client-servlet>
-
-        <aspectj.version>1.8.4</aspectj.version>
-        <backport-util-concurrent-backport-util-concurrent>3.1</backport-util-concurrent-backport-util-concurrent>
-        <com.araguacaima-commons-utils>1.0.1-SNAPSHOT</com.araguacaima-commons-utils>
-        <com.araguacaima-composite-specification>1.0.1-SNAPSHOT</com.araguacaima-composite-specification>
-        <com.araguacaima-orpheus-db>1.0.1-SNAPSHOT</com.araguacaima-orpheus-db>
-        <com.araguacaima-braas>1.0.1-SNAPSHOT</com.araguacaima-braas>
-        <org.eclipse.jetty-jetty-util>9.4.12.v20180830</org.eclipse.jetty-jetty-util>
-        <com.fasterxml.jackson.core-jackson-annotations>2.9.8</com.fasterxml.jackson.core-jackson-annotations>
-        <com.fasterxml.jackson.core-jackson-core>2.9.8</com.fasterxml.jackson.core-jackson-core>
-        <com.fasterxml.jackson.core-jackson-databind>2.9.8</com.fasterxml.jackson.core-jackson-databind>
-        <com.fasterxml.jackson.module-jackson-module-jsonSchema>2.9.8
-        </com.fasterxml.jackson.module-jackson-module-jsonSchema>
-        <com.github.rjeschke-txtmark>0.13</com.github.rjeschke-txtmark>
-        <com.google.api-client>1.22.0</com.google.api-client>
-        <com.google.apis-google-api-services-calendar>v3-rev254-1.22.0</com.google.apis-google-api-services-calendar>
-        <com.google.apis-google-api-services-drive>v3-rev82-1.22.0</com.google.apis-google-api-services-drive>
-        <com.google.apis-google-api-services-oauth2>v2-rev129-1.22.0</com.google.apis-google-api-services-oauth2>
-        <com.heroku.sdk-heroku-maven-plugin>0.4.4</com.heroku.sdk-heroku-maven-plugin>
-        <com.mchange-c3p0>0.9.5.4</com.mchange-c3p0>
-        <com.querydsl-querydsl-core>4.0.1</com.querydsl-querydsl-core>
-        <com.sparkjava-spark-core>2.8.0</com.sparkjava-spark-core>
-        <com.sparkjava-spark-template-jade>2.7.1</com.sparkjava-spark-template-jade>
-        <com.thoughtworks.paranamer-paranamer>2.7</com.thoughtworks.paranamer-paranamer>
-        <commons-io-commons-io>2.6</commons-io-commons-io>
-        <cz.jirutka.rsql-rsql-parser>2.1.0</cz.jirutka.rsql-rsql-parser>
-        <dandelion.datatables.version>0.9.3</dandelion.datatables.version>
-        <de.sven-jacobs-loremipsum>1.0</de.sven-jacobs-loremipsum>
-        <ehcache.version>2.6.6</ehcache.version>
-        <hamcrest.version>1.3</hamcrest.version>
-        <httpclient>4.2.5</httpclient>
-        <jadira-usertype-core.version>3.1.0.CR8</jadira-usertype-core.version>
-        <java.version>1.8</java.version>
-        <javax.activation-activation>1.1.1</javax.activation-activation>
-        <javax.el.version>2.2</javax.el.version>
-        <javax.inject-javax.inject>1</javax.inject-javax.inject>
-        <javax.validation-validation-api>2.0.0.Final</javax.validation-validation-api>
-        <jaxb-impl.version>2.2.7</jaxb-impl.version>
-        <jaxb.api.version>2.2.7</jaxb.api.version>
-        <jodatime.version>2.3</jodatime.version>
-        <json>20090211</json>
-        <junit.version>4.11</junit.version>
-        <logback.version>1.2.3</logback.version>
-        <maven.compiler.source>1.8</maven.compiler.source>
-        <maven.compiler.target>1.8</maven.compiler.target>
-        <maven.compiler.version>3.0</maven.compiler.version>
-        <maven.skipTests>true</maven.skipTests>
-        <maven.surefire.version>2.13</maven.surefire.version>
-
-        <org.apache.poi-poi>4.1.0</org.apache.poi-poi>
-        <org.javassist-javassist>3.25.0-GA</org.javassist-javassist>
-        <org.atteo-evo-inflector>1.2.2</org.atteo-evo-inflector>
-
-        <org.apache.commons-beanutils>1.9.1</org.apache.commons-beanutils>
-        <org.apache.commons-commons-collections4>4.2</org.apache.commons-commons-collections4>
-        <org.apache.commons-commons-lang3>3.5</org.apache.commons-commons-lang3>
-        <org.apache.commons-commons-math3>3.6.1</org.apache.commons-commons-math3>
-        <org.apache.commons-fileupload>1.2.2</org.apache.commons-fileupload>
-        <org.apache.logging.log4j-core>2.8.2</org.apache.logging.log4j-core>
-        <org.apache.maven-maven-core>3.2.2</org.apache.maven-maven-core>
-        <org.apache.maven-maven-plugin-api>3.0</org.apache.maven-maven-plugin-api>
-        <org.apache.maven.plugin-maven-jar-plugin>2.4</org.apache.maven.plugin-maven-jar-plugin>
-        <org.apache.maven.plugin-maven-source-plugin>2.4</org.apache.maven.plugin-maven-source-plugin>
-        <org.apache.maven.plugin-maven-surefire-plugin>2.12.4</org.apache.maven.plugin-maven-surefire-plugin>
-        <org.apache.maven.plugin-tools-maven-plugin-annotations>3.4
-        </org.apache.maven.plugin-tools-maven-plugin-annotations>
-        <org.apache.maven.plugins-maven-dependency-plugin>3.1.1</org.apache.maven.plugins-maven-dependency-plugin>
-        <org.apache.maven.plugins-maven-assembly-plugin>3.1.0</org.apache.maven.plugins-maven-assembly-plugin>
-        <org.apache.maven.plugins-maven-compiler-plugin>2.3.2</org.apache.maven.plugins-maven-compiler-plugin>
-        <org.apache.maven.plugins-maven-jar-plugin>3.0.2</org.apache.maven.plugins-maven-jar-plugin>
-        <org.codehaus.mojo-exec-maven-plugin>1.6.0</org.codehaus.mojo-exec-maven-plugin>
-        <org.apache.maven.shared-maven-invoker>2.2</org.apache.maven.shared-maven-invoker>
-        <org.bitbucket.mstrobel-procyon-compilertools>0.5.27</org.bitbucket.mstrobel-procyon-compilertools>
-        <org.codehaus.mojo-aspectj-maven-plugin>1.8</org.codehaus.mojo-aspectj-maven-plugin>
-        <org.codehaus.plexus-plexus-utils>3.0.8</org.codehaus.plexus-plexus-utils>
-        <org.fusesource.jansi-jansi>1.16</org.fusesource.jansi-jansi>
-        <org.hibernate-version>5.3.1.Final</org.hibernate-version>
-        <org.wildfly.transaction-wildfly-transaction-client>1.1.3.Final
-        </org.wildfly.transaction-wildfly-transaction-client>
-        <org.hibernate-hibernate-ogm-core>5.4.1.Final</org.hibernate-hibernate-ogm-core>
-        <org.hibernate.javax.persistence-hibernate-jpa-2.1-api>1.0.2.Final
-        </org.hibernate.javax.persistence-hibernate-jpa-2.1-api>
-        <org.jsoup-jsoup>1.8.1</org.jsoup-jsoup>
-        <org.mockito-mockito-core>1.9.5</org.mockito-mockito-core>
-        <org.postgresql-postgresql>42.2.4</org.postgresql-postgresql>
-        <org.reflections-reflections>0.9.9-RC1</org.reflections-reflections>
-        <org.scala-lang-scala-library>2.10.4</org.scala-lang-scala-library>
-        <org.slf4j-slf4j-api>1.7.7</org.slf4j-slf4j-api>
-        <org.slf4j-slf4j-simple>1.7.25</org.slf4j-slf4j-simple>
-        <!--<org.springframework-spring-core>4.3.10.RELEASE</org.springframework-spring-core>-->
-        <org.threeten-threetenbp>1.3.7</org.threeten-threetenbp>
-        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-        <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
-        <rome.version>1.5.0</rome.version>
-        <slf4j.version>1.7.26</slf4j.version>
-        <snowdrop.version>4.0.0.Final</snowdrop.version>
-        <spring-data-jpa.version>1.4.3.RELEASE</spring-data-jpa.version>
-        <springframework.version.data>2.0.1.RELEASE</springframework.version.data>
-        <springframework.version.security>4.2.3.RELEASE</springframework.version.security>
-        <springframework.version>5.0.1.RELEASE</springframework.version>
-        <org.springframework-spring-context-support>5.1.6.RELEASE</org.springframework-spring-context-support>
-        <validation.version>1.0.0.GA</validation.version>
-        <xerces-xercesImpl>2.9.1</xerces-xercesImpl>
-        <sparkPac4j.version>2.3.0</sparkPac4j.version>
-        <pac4j.version>2.3.0</pac4j.version>
-        <com.jayway.jsonpath-json-path>2.3.0</com.jayway.jsonpath-json-path>
-        <com.github.bohnman-squiggly-filter-jackson>1.3.11</com.github.bohnman-squiggly-filter-jackson>
-        <com.fasterxml.jackson.dataformat-jackson-dataformat-yaml>2.7.1
-        </com.fasterxml.jackson.dataformat-jackson-dataformat-yaml>
-        <de.neuland-bfi-jade4j>1.2.5</de.neuland-bfi-jade4j>
-        <com.sun.mail-javax.mail>1.6.2</com.sun.mail-javax.mail>
-        <com.google.code.gson-gson>2.8.5</com.google.code.gson-gson>
-    </properties>
-
-    <dependencyManagement>
-        <dependencies>
-
-            <!-- Drools -->
-
-            <dependency>
-                <groupId>org.kie</groupId>
-                <artifactId>kie-api</artifactId>
-                <version>${drools.version}</version>
-            </dependency>
-
-            <dependency>
-                <groupId>org.kie</groupId>
-                <artifactId>kie-ci</artifactId>
-                <version>${drools.version}</version>
-            </dependency>
-
-            <dependency>
-                <groupId>org.drools</groupId>
-                <artifactId>drools-compiler</artifactId>
-                <version>${drools.version}</version>
-            </dependency>
-
-            <dependency>
-                <groupId>org.drools</groupId>
-                <artifactId>drools-decisiontables</artifactId>
-                <version>${drools.version}</version>
-            </dependency>
-
-            <!-- araguacaima libraries -->
-            <dependency>
-                <groupId>com.araguacaima</groupId>
-                <artifactId>commons-utils</artifactId>
-                <version>${com.araguacaima-commons-utils}</version>
-                <scope>compile</scope>
-            </dependency>
-
-            <dependency>
-                <groupId>com.araguacaima.braas</groupId>
-                <artifactId>braas-core</artifactId>
-                <version>${project.version}</version>
-            </dependency>
-
-            <!-- Apache commons -->
-            <dependency>
-                <groupId>org.apache.commons</groupId>
-                <artifactId>commons-collections4</artifactId>
-                <version>${org.apache.commons-commons-collections4}</version>
-                <scope>compile</scope>
-            </dependency>
-
-            <dependency>
-                <groupId>org.apache.commons</groupId>
-                <artifactId>commons-lang3</artifactId>
-                <version>${org.apache.commons-commons-lang3}</version>
-                <scope>compile</scope>
-            </dependency>
-
-            <dependency>
-                <groupId>commons-io</groupId>
-                <artifactId>commons-io</artifactId>
-                <version>${commons-io-commons-io}</version>
-            </dependency>
-
-            <!-- Google -->
-            <dependency>
-                <groupId>com.google.api-client</groupId>
-                <artifactId>google-api-client</artifactId>
-                <version>${com.google.api-client-google-api-client}</version>
-            </dependency>
-
-            <dependency>
-                <groupId>com.google.oauth-client</groupId>
-                <artifactId>google-oauth-client-servlet</artifactId>
-                <version>${com.google.oauth-client-google-oauth-client-servlet}</version>
-            </dependency>
-
-            <dependency>
-                <groupId>com.google.apis</groupId>
-                <artifactId>google-api-services-drive</artifactId>
-                <version>${com.google.apis-google-api-services-drive}</version>
-            </dependency>
-
-            <dependency>
-                <groupId>com.google.apis</groupId>
-                <artifactId>google-api-services-sheets</artifactId>
-                <version>${com.google.apis-google-api-services-sheets}</version>
-            </dependency>
-
-            <!-- Logging with SLF4J & LogBack -->
-            <dependency>
-                <groupId>org.slf4j</groupId>
-                <artifactId>jcl-over-slf4j</artifactId>
-                <version>${slf4j.version}</version>
-                <scope>runtime</scope>
-            </dependency>
-
-            <dependency>
-                <groupId>org.slf4j</groupId>
-                <artifactId>slf4j-api</artifactId>
-                <version>${slf4j.version}</version>
-                <scope>compile</scope>
-            </dependency>
-
-            <dependency>
-                <groupId>org.slf4j</groupId>
-                <artifactId>jul-to-slf4j</artifactId>
-                <version>${slf4j.version}</version>
-                <scope>compile</scope>
-            </dependency>
-
-            <dependency>
-                <groupId>ch.qos.logback</groupId>
-                <artifactId>logback-classic</artifactId>
-                <version>${logback.version}</version>
-                <scope>compile</scope>
-            </dependency>
-
-            <dependency>
-                <groupId>com.fasterxml.jackson.core</groupId>
-                <artifactId>jackson-annotations</artifactId>
-                <version>${com.fasterxml.jackson.core-jackson-annotations}</version>
-                <scope>compile</scope>
-            </dependency>
-
-            <dependency>
-                <groupId>cz.jirutka.rsql</groupId>
-                <artifactId>rsql-parser</artifactId>
-                <version>${cz.jirutka.rsql-rsql-parser}</version>
-                <scope>compile</scope>
-            </dependency>
-
-            <dependency>
-                <groupId>com.sparkjava</groupId>
-                <artifactId>spark-core</artifactId>
-                <version>${com.sparkjava-spark-core}</version>
-            </dependency>
-
-            <dependency>
-                <groupId>com.sparkjava</groupId>
-                <artifactId>spark-template-jade</artifactId>
-                <version>${com.sparkjava-spark-template-jade}</version>
-                <scope>compile</scope>
-            </dependency>
-
-            <dependency>
-                <groupId>org.eclipse.jetty</groupId>
-                <artifactId>jetty-util</artifactId>
-                <version>${org.eclipse.jetty-jetty-util}</version>
-            </dependency>
-
-            <dependency>
-                <groupId>org.pac4j</groupId>
-                <artifactId>spark-pac4j</artifactId>
-                <version>${sparkPac4j.version}</version>
-            </dependency>
-
-            <dependency>
-                <groupId>org.pac4j</groupId>
-                <artifactId>pac4j-oauth</artifactId>
-                <version>${pac4j.version}</version>
-            </dependency>
-
-            <dependency>
-                <groupId>org.pac4j</groupId>
-                <artifactId>pac4j-openid</artifactId>
-                <version>${pac4j.version}</version>
-            </dependency>
-
-            <dependency>
-                <groupId>org.pac4j</groupId>
-                <artifactId>pac4j-saml</artifactId>
-                <version>${pac4j.version}</version>
-            </dependency>
-
-            <dependency>
-                <groupId>org.pac4j</groupId>
-                <artifactId>pac4j-cas</artifactId>
-                <version>${pac4j.version}</version>
-            </dependency>
-
-            <dependency>
-                <groupId>org.pac4j</groupId>
-                <artifactId>pac4j-http</artifactId>
-                <version>${pac4j.version}</version>
-            </dependency>
-
-            <dependency>
-                <groupId>org.pac4j</groupId>
-                <artifactId>pac4j-oidc</artifactId>
-                <version>${pac4j.version}</version>
-                <exclusions>
-                    <exclusion>
-                        <groupId>javax.mail</groupId>
-                        <artifactId>mail</artifactId>
-                    </exclusion>
-                </exclusions>
-            </dependency>
-
-            <dependency>
-                <groupId>org.pac4j</groupId>
-                <artifactId>pac4j-jwt</artifactId>
-                <version>${pac4j.version}</version>
-            </dependency>
-
-            <dependency>
-                <groupId>org.pac4j</groupId>
-                <artifactId>pac4j-sql</artifactId>
-                <version>${pac4j.version}</version>
-            </dependency>
-
-            <dependency>
-                <groupId>org.pac4j</groupId>
-                <artifactId>pac4j-ldap</artifactId>
-                <version>${pac4j.version}</version>
-            </dependency>
-
-            <dependency>
-                <groupId>org.pac4j</groupId>
-                <artifactId>pac4j-mongo</artifactId>
-                <version>${pac4j.version}</version>
-            </dependency>
-
-            <dependency>
-                <groupId>org.pac4j</groupId>
-                <artifactId>pac4j-kerberos</artifactId>
-                <version>${pac4j.version}</version>
-            </dependency>
-
-            <dependency>
-                <groupId>org.pac4j</groupId>
-                <artifactId>pac4j-couch</artifactId>
-                <version>${pac4j.version}</version>
-            </dependency>
-
-            <dependency>
-                <groupId>com.jayway.jsonpath</groupId>
-                <artifactId>json-path</artifactId>
-                <version>${com.jayway.jsonpath-json-path}</version>
-            </dependency>
-
-            <dependency>
-                <groupId>com.github.bohnman</groupId>
-                <artifactId>squiggly-filter-jackson</artifactId>
-                <version>${com.github.bohnman-squiggly-filter-jackson}</version>
-            </dependency>
-
-            <dependency>
-                <groupId>com.fasterxml.jackson.dataformat</groupId>
-                <artifactId>jackson-dataformat-yaml</artifactId>
-                <version>${com.fasterxml.jackson.core-jackson-core}</version>
-            </dependency>
-
-            <dependency>
-                <groupId>de.neuland-bfi</groupId>
-                <artifactId>jade4j</artifactId>
-                <version>${de.neuland-bfi-jade4j}</version>
-                <scope>compile</scope>
-            </dependency>
-
-            <dependency>
-                <groupId>com.sun.mail</groupId>
-                <artifactId>javax.mail</artifactId>
-                <version>${com.sun.mail-javax.mail}</version>
-                <scope>compile</scope>
-            </dependency>
-
-            <dependency>
-                <groupId>com.google.code.gson</groupId>
-                <artifactId>gson</artifactId>
-                <version>${com.google.code.gson-gson}</version>
-                <scope>compile</scope>
-            </dependency>
-
-            <dependency>
-                <groupId>org.apache.poi</groupId>
-                <artifactId>poi</artifactId>
-                <version>${org.apache.poi-poi}</version>
-                <scope>compile</scope>
-            </dependency>
-
-            <dependency>
-                <groupId>org.apache.poi</groupId>
-                <artifactId>poi-ooxml</artifactId>
-                <version>${org.apache.poi-poi}</version>
-                <scope>compile</scope>
-            </dependency>
-
-            <dependency>
-                <groupId>org.atteo</groupId>
-                <artifactId>evo-inflector</artifactId>
-                <version>${org.atteo-evo-inflector}</version>
-                <scope>compile</scope>
-            </dependency>
-
-        </dependencies>
-
-    </dependencyManagement>
-
-    <modules>
-        <module>core</module>
-        <module>api</module>
-    </modules>
-
-
-    <profiles>
-        <profile>
-            <id>release</id>
-            <build>
-                <defaultGoal>clean deploy -P release:clean release:prepare release:perform</defaultGoal>
-                <plugins>
-                    <plugin>
-                        <groupId>org.sonatype.plugins</groupId>
-                        <artifactId>nexus-staging-maven-plugin</artifactId>
-                        <version>${org.sonatype.plugins-nexus-staging-maven-plugin}</version>
-                        <extensions>true</extensions>
-                        <configuration>
-                            <serverId>ossrh</serverId>
-                            <nexusUrl>https://oss.sonatype.org/</nexusUrl>
-                            <autoReleaseAfterClose>true</autoReleaseAfterClose>
-                        </configuration>
-                    </plugin>
-
-                    <plugin>
-                        <groupId>org.apache.maven.plugins</groupId>
-                        <artifactId>maven-compiler-plugin</artifactId>
-                        <version>${org.apache.maven.plugins-maven-compiler-plugin}</version>
-                        <configuration>
-                            <source>${maven.compiler.source}</source>
-                            <target>${maven.compiler.target}</target>
-                            <encoding>${project.build.sourceEncoding}</encoding>
-                        </configuration>
-                    </plugin>
-
-                    <plugin>
-                        <groupId>org.apache.maven.plugins</groupId>
-                        <artifactId>maven-source-plugin</artifactId>
-                        <version>${org.apache.maven.plugins-maven-source-plugin}</version>
-                        <executions>
-                            <execution>
-                                <id>attach-sources</id>
-                                <goals>
-                                    <goal>jar-no-fork</goal>
-                                </goals>
-                            </execution>
-                        </executions>
-                    </plugin>
-
-                    <plugin>
-                        <groupId>org.apache.maven.plugins</groupId>
-                        <artifactId>maven-javadoc-plugin</artifactId>
-                        <version>3.0.0-M1</version>
-                        <configuration>
-                            <show>private</show>
-                            <nohelp>true</nohelp>
-                        </configuration>
-                        <executions>
-                            <execution>
-                                <id>attach-javadocs</id>
-                                <goals>
-                                    <goal>jar</goal>
-                                </goals>
-                            </execution>
-                        </executions>
-                    </plugin>
-
-                    <plugin>
-                        <groupId>org.apache.maven.plugins</groupId>
-                        <artifactId>maven-gpg-plugin</artifactId>
-                        <version>${org.apache.maven.plugins-maven-gpg-plugin}</version>
-                        <executions>
-                            <execution>
-                                <id>sign-artifacts</id>
-                                <phase>verify</phase>
-                                <goals>
-                                    <goal>sign</goal>
-                                </goals>
-                            </execution>
-                        </executions>
-                    </plugin>
-
-                    <plugin>
-                        <groupId>org.apache.maven.plugins</groupId>
-                        <artifactId>maven-release-plugin</artifactId>
-                        <version>${org.apache.maven.plugins-maven-release-plugin}</version>
-                        <configuration>
-                            <autoVersionSubmodules>true</autoVersionSubmodules>
-                            <useReleaseProfile>false</useReleaseProfile>
-                            <releaseProfiles>release</releaseProfiles>
-                            <goals>deploy</goals>
-                        </configuration>
-                    </plugin>
-
-                </plugins>
-            </build>
-        </profile>
-        <profile>
-            <id>snapshot</id>
-            <build>
-                <defaultGoal>clean deploy</defaultGoal>
-                <plugins>
-                    <plugin>
-                        <groupId>org.sonatype.plugins</groupId>
-                        <artifactId>nexus-staging-maven-plugin</artifactId>
-                        <version>${org.sonatype.plugins-nexus-staging-maven-plugin}</version>
-                        <extensions>true</extensions>
-                        <configuration>
-                            <serverId>ossrh</serverId>
-                            <nexusUrl>https://oss.sonatype.org/</nexusUrl>
-                            <autoReleaseAfterClose>false</autoReleaseAfterClose>
-                        </configuration>
-                    </plugin>
-
-                    <plugin>
-                        <groupId>org.apache.maven.plugins</groupId>
-                        <artifactId>maven-compiler-plugin</artifactId>
-                        <version>${org.apache.maven.plugins-maven-compiler-plugin}</version>
-                        <configuration>
-                            <source>${maven.compiler.source}</source>
-                            <target>${maven.compiler.target}</target>
-                            <encoding>${project.build.sourceEncoding}</encoding>
-                        </configuration>
-                    </plugin>
-
-                    <plugin>
-                        <groupId>org.apache.maven.plugins</groupId>
-                        <artifactId>maven-source-plugin</artifactId>
-                        <version>${org.apache.maven.plugins-maven-source-plugin}</version>
-                        <executions>
-                            <execution>
-                                <id>attach-sources</id>
-                                <goals>
-                                    <goal>jar-no-fork</goal>
-                                </goals>
-                            </execution>
-                        </executions>
-                    </plugin>
-
-                    <plugin>
-                        <groupId>org.apache.maven.plugins</groupId>
-                        <artifactId>maven-javadoc-plugin</artifactId>
-                        <version>3.0.0-M1</version>
-                        <configuration>
-                            <show>private</show>
-                            <nohelp>true</nohelp>
-                        </configuration>
-                        <executions>
-                            <execution>
-                                <id>attach-javadocs</id>
-                                <goals>
-                                    <goal>jar</goal>
-                                </goals>
-                            </execution>
-                        </executions>
-                    </plugin>
-
-                    <plugin>
-                        <groupId>org.apache.maven.plugins</groupId>
-                        <artifactId>maven-gpg-plugin</artifactId>
-                        <version>${org.apache.maven.plugins-maven-gpg-plugin}</version>
-                        <executions>
-                            <execution>
-                                <id>sign-artifacts</id>
-                                <phase>verify</phase>
-                                <goals>
-                                    <goal>sign</goal>
-                                </goals>
-                            </execution>
-                        </executions>
-                    </plugin>
-                </plugins>
-            </build>
-        </profile>
-
-        <profile>
-            <id>local</id>
-            <properties>
-                <downloadSources>true</downloadSources>
-                <downloadJavadocs>false</downloadJavadocs>
-            </properties>
-        </profile>
-    </profiles>
+    <artifactId>braas-api</artifactId>
+    <packaging>jar</packaging>
+    <name>Api</name>
+    <description>Business Rules as a Service - Api</description>
+
+    <parent>
+        <groupId>com.araguacaima.braas</groupId>
+        <artifactId>parent</artifactId>
+        <version>1.0.1-SNAPSHOT</version>
+        <relativePath>../pom.xml</relativePath>
+    </parent>
+
+    <dependencies>
+        <dependency>
+            <groupId>cz.jirutka.rsql</groupId>
+            <artifactId>rsql-parser</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.sparkjava</groupId>
+            <artifactId>spark-core</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.sparkjava</groupId>
+            <artifactId>spark-template-jade</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.commons</groupId>
+            <artifactId>commons-lang3</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.commons</groupId>
+            <artifactId>commons-collections4</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>com.araguacaima</groupId>
+            <artifactId>commons-utils</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>com.araguacaima.braas</groupId>
+            <artifactId>braas-core</artifactId>
+        </dependency>
+
+        <!-- Logging with SLF4J & LogBack -->
+        <dependency>
+            <groupId>org.slf4j</groupId>
+            <artifactId>jcl-over-slf4j</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>org.slf4j</groupId>
+            <artifactId>slf4j-api</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>org.slf4j</groupId>
+            <artifactId>jul-to-slf4j</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>ch.qos.logback</groupId>
+            <artifactId>logback-classic</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>org.pac4j</groupId>
+            <artifactId>spark-pac4j</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>org.pac4j</groupId>
+            <artifactId>pac4j-oauth</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>org.pac4j</groupId>
+            <artifactId>pac4j-openid</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>org.pac4j</groupId>
+            <artifactId>pac4j-saml</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>org.pac4j</groupId>
+            <artifactId>pac4j-cas</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>org.pac4j</groupId>
+            <artifactId>pac4j-http</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>org.pac4j</groupId>
+            <artifactId>pac4j-oidc</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>org.pac4j</groupId>
+            <artifactId>pac4j-jwt</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>org.pac4j</groupId>
+            <artifactId>pac4j-sql</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>org.pac4j</groupId>
+            <artifactId>pac4j-ldap</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>org.pac4j</groupId>
+            <artifactId>pac4j-mongo</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>org.pac4j</groupId>
+            <artifactId>pac4j-kerberos</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>org.pac4j</groupId>
+            <artifactId>pac4j-couch</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>com.github.bohnman</groupId>
+            <artifactId>squiggly-filter-jackson</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>com.fasterxml.jackson.dataformat</groupId>
+            <artifactId>jackson-dataformat-yaml</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>de.neuland-bfi</groupId>
+            <artifactId>jade4j</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>com.google.code.gson</groupId>
+            <artifactId>gson</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>org.apache.poi</groupId>
+            <artifactId>poi</artifactId>
+        </dependency>
+
+    </dependencies>
 
     <build>
         <defaultGoal>clean install</defaultGoal>
         <plugins>
+            <plugin>
+                <groupId>org.codehaus.mojo</groupId>
+                <artifactId>exec-maven-plugin</artifactId>
+                <version>1.6.0</version>
+                <configuration>
+                    <mainClass>com.araguacaima.braas.api.Server</mainClass>
+                </configuration>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-jar-plugin</artifactId>
+                <version>${org.apache.maven.plugins-maven-jar-plugin}</version>
+                <configuration>
+                    <archive>
+                        <index>true</index>
+                        <manifest>
+                            <addClasspath>true</addClasspath>
+                            <mainClass>com.araguacaima.braas.api.Server</mainClass>
+                        </manifest>
+                    </archive>
+                </configuration>
+            </plugin>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-compiler-plugin</artifactId>
@@ -734,26 +198,228 @@
             </plugin>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-source-plugin</artifactId>
-                <version>${org.apache.maven.plugins-maven-source-plugin}</version>
-                <executions>
-                    <execution>
-                        <id>attach-sources</id>
-                        <goals>
-                            <goal>jar</goal>
-                        </goals>
-                    </execution>
-                </executions>
-            </plugin>
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-surefire-plugin</artifactId>
                 <version>${org.apache.maven.plugin-maven-surefire-plugin}</version>
                 <configuration>
                     <skipTests>${maven.skipTests}</skipTests>
                 </configuration>
             </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-dependency-plugin</artifactId>
+                <version>${org.apache.maven.plugins-maven-dependency-plugin}</version>
+                <executions>
+                    <execution>
+                        <id>copy-dependencies</id>
+                        <phase>package</phase>
+                        <goals>
+                            <goal>copy-dependencies</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
         </plugins>
     </build>
-
+    <profiles>
+        <profile>
+            <id>local</id>
+            <activation>
+                <activeByDefault>false</activeByDefault>
+            </activation>
+            <properties>
+                <WORKSPACE_DIRECTORY>${project.build.directory}</WORKSPACE_DIRECTORY>
+            </properties>
+            <build>
+                <plugins>
+                    <plugin>
+                        <artifactId>maven-resources-plugin</artifactId>
+                        <version>3.1.0</version>
+                        <executions>
+                            <execution>
+                                <id>copy-config</id>
+                                <phase>initialize</phase>
+                                <goals>
+                                    <goal>resources</goal>
+                                </goals>
+                                <configuration>
+                                    <outputDirectory>target/classes/config</outputDirectory>
+                                    <resources>
+                                        <resource>
+                                            <directory>config/dev</directory>
+                                        </resource>
+                                    </resources>
+                                </configuration>
+                            </execution>
+                            <execution>
+                                <id>copy-swagger</id>
+                                <phase>initialize</phase>
+                                <goals>
+                                    <goal>resources</goal>
+                                </goals>
+                                <configuration>
+                                    <outputDirectory>target/classes/web/public</outputDirectory>
+                                    <resources>
+                                        <resource>
+                                            <directory>config</directory>
+                                            <includes>
+                                                <include>braas-apis.yaml</include>
+                                            </includes>
+                                            <filtering>true</filtering>
+                                        </resource>
+                                    </resources>
+                                    <filters>
+                                        <filter>config/dev/config.properties</filter>
+                                    </filters>
+                                </configuration>
+                            </execution>
+                            <execution>
+                                <id>copy-logback</id>
+                                <phase>initialize</phase>
+                                <goals>
+                                    <goal>resources</goal>
+                                </goals>
+                                <configuration>
+                                    <outputDirectory>target/classes</outputDirectory>
+                                    <resources>
+                                        <resource>
+                                            <directory>config</directory>
+                                            <includes>
+                                                <include>logback.xml</include>
+                                            </includes>
+                                            <filtering>true</filtering>
+                                        </resource>
+                                    </resources>
+                                    <filters>
+                                        <filter>config/dev/config.properties</filter>
+                                    </filters>
+                                </configuration>
+                            </execution>
+                            <execution>
+                                <id>copy-css</id>
+                                <phase>initialize</phase>
+                                <goals>
+                                    <goal>resources</goal>
+                                </goals>
+                                <configuration>
+                                    <outputDirectory>target/classes/web/public/stylesheets</outputDirectory>
+                                    <resources>
+                                        <resource>
+                                            <directory>src/main/resources/web/public/stylesheets</directory>
+                                            <includes>
+                                                <include>**</include>
+                                            </includes>
+                                            <filtering>true</filtering>
+                                        </resource>
+                                    </resources>
+                                    <filters>
+                                        <filter>config/dev/config.properties</filter>
+                                    </filters>
+                                </configuration>
+                            </execution>
+                        </executions>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+        <profile>
+            <id>release</id>
+            <activation>
+                <activeByDefault>true</activeByDefault>
+            </activation>
+            <properties>
+                <WORKSPACE_DIRECTORY>/app/api/target</WORKSPACE_DIRECTORY>
+            </properties>
+            <build>
+                <plugins>
+                    <plugin>
+                        <artifactId>maven-resources-plugin</artifactId>
+                        <version>3.1.0</version>
+                        <executions>
+                            <execution>
+                                <id>copy-config</id>
+                                <phase>initialize</phase>
+                                <goals>
+                                    <goal>resources</goal>
+                                </goals>
+                                <configuration>
+                                    <outputDirectory>target/classes/config</outputDirectory>
+                                    <resources>
+                                        <resource>
+                                            <directory>config/prod</directory>
+                                        </resource>
+                                    </resources>
+                                </configuration>
+                            </execution>
+                            <execution>
+                                <id>copy-swagger</id>
+                                <phase>initialize</phase>
+                                <goals>
+                                    <goal>resources</goal>
+                                </goals>
+                                <configuration>
+                                    <outputDirectory>target/classes/web/public</outputDirectory>
+                                    <resources>
+                                        <resource>
+                                            <directory>config</directory>
+                                            <includes>
+                                                <include>braas-apis.yaml</include>
+                                            </includes>
+                                            <filtering>true</filtering>
+                                        </resource>
+                                    </resources>
+                                    <filters>
+                                        <filter>config/prod/config.properties</filter>
+                                    </filters>
+                                </configuration>
+                            </execution>
+                            <execution>
+                                <id>copy-logback</id>
+                                <phase>initialize</phase>
+                                <goals>
+                                    <goal>resources</goal>
+                                </goals>
+                                <configuration>
+                                    <outputDirectory>target/classes</outputDirectory>
+                                    <resources>
+                                        <resource>
+                                            <directory>config</directory>
+                                            <includes>
+                                                <include>logback.xml</include>
+                                            </includes>
+                                            <filtering>true</filtering>
+                                        </resource>
+                                    </resources>
+                                    <filters>
+                                        <filter>config/prod/config.properties</filter>
+                                    </filters>
+                                </configuration>
+                            </execution>
+                            <execution>
+                                <id>copy-css</id>
+                                <phase>initialize</phase>
+                                <goals>
+                                    <goal>resources</goal>
+                                </goals>
+                                <configuration>
+                                    <outputDirectory>target/classes/web/public/stylesheets</outputDirectory>
+                                    <resources>
+                                        <resource>
+                                            <directory>src/main/resources/web/public/stylesheets</directory>
+                                            <includes>
+                                                <include>**</include>
+                                            </includes>
+                                            <filtering>true</filtering>
+                                        </resource>
+                                    </resources>
+                                    <filters>
+                                        <filter>config/prod/config.properties</filter>
+                                    </filters>
+                                </configuration>
+                            </execution>
+                        </executions>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+    </profiles>
 </project>

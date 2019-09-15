@@ -1,1 +1,0 @@
-web: java $JAVA_OPTS -Xdebug -Xrunjdwp:transport=dt_socket,server=y,suspend=n,address=9999 -cp ./api/target/classes:./api/target/dependency/* com.araguacaima.braas.api.Server

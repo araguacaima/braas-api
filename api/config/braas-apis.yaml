@@ -1,0 +1,211 @@
+swagger: '2.0'
+info:
+  description: Operations can be done with Braas.
+  version: 1.0.0
+  title: Braas API
+  contact:
+    email: araguacaima@gmail.com
+  license:
+    name: Apache 2.0
+    url: http://www.apache.org/licenses/LICENSE-2.0.html
+host: ${DEPLOYED_SERVER}
+tags:
+- name: Rules base
+  description: Manages your own rule's base as a spreadsheet. It can be uploaded from a locally file or even defined remotely thru a Google Drive Spreadsheet URL. This rule's base can also be downloaded
+- name: Rules engine execution
+  description: Once you've defined the rules base, you can use these APIs to pass your custom objet to the rules engine
+- name: Utils
+  description: Some extra utilities
+schemes:
+- http
+- https
+paths:
+  /api/base:
+    get:
+      tags:
+      - Rules base
+      summary: Download the rule's base.
+      description: Download the rule's base you have previously uploaded in current session as a spreadsheet or non-content if any.
+      operationId: get-base
+      produces:
+        - application/vnd.google-apps.spreadsheet
+      responses:
+        200:
+          description: OK
+        204:
+          description: No content
+      security:
+        - braas_auth:
+          - read:base
+    post:
+      tags:
+      - Rules base
+      summary: Add a new rule's base
+      description: Upload a new rule's base as a spreadsheet from a locally file. If there is already a rule's base setted this method will fail. If it's required to replace current rule's base you can try calling PUT method, or DELETE and after this one. This method will fail too for any non-authorized user
+      operationId: add-base
+      consumes:
+        - multipart/form-data
+        - application/x-www-form-urlencoded
+      parameters:
+        - in: formData
+          name: spreadsheet
+          type: file
+          description: The spreadsheet on which the rules resides
+          x-mimetype: application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.google-apps.spreadsheet
+        - in: formData
+          name: schema-json
+          type: string
+          required: false
+          description: A json map containing every class and its associated schema used within rules. If you chose to omit this parameter you should mandatory provide a schema-file, as described bellow
+        - in: formData
+          name: schema-file
+          type: file
+          required: false
+          description: A file with a json map containing every class and its associated schema used within rules. If you chose to omit this parameter you should mandatory provide a schema-json, as described above
+      responses:
+        201:
+         description: Created
+        202:
+         description: Accepted
+        401:
+         description: Unauthorized
+        405:
+         description: Invalid input
+        409:
+          description: Conflict
+      security:
+        - braas_auth:
+          - write:rule
+          - read:rule
+    put:
+      tags:
+        - Rules base
+      summary: Replace an existent rule's base
+      description: Upload a rule's base as a spreadsheet from a locally file, for replacing an existing one or even creating it if not. If there is already a rule's base setted this method will fail. This method will fail too for any non-authorized user
+      operationId: replace-base
+      consumes:
+        - multipart/form-data
+        - application/x-www-form-urlencoded
+      parameters:
+        - in: formData
+          name: spreadsheet
+          type: file
+          required: true
+          description: The spreadsheet on which the rules resides
+          x-mimetype: application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.google-apps.spreadsheet
+        - in: formData
+          name: schema-json
+          type: string
+          required: false
+          description: A json map containing every class and its associated schema used within rules.
+        - in: formData
+          name: schema-file
+          type: file
+          required: false
+          description: A file with a json map containing every class and its associated schema used within rules.
+      responses:
+        201:
+         description: Created
+        202:
+         description: Accepted
+        401:
+         description: Unauthorized
+        405:
+         description: Invalid input
+        409:
+          description: Conflict
+      security:
+        - braas_auth:
+          - write:rule
+          - read:rule
+    delete:
+      tags:
+        - Rules base
+      summary: Delete an existent rule's base
+      description: Delete the rule's base previously uploaded. This method will fail if no rule's base was previously uploaded
+      responses:
+        200:
+          description: OK
+        404:
+          description: model not found
+      security:
+        - braas_auth:
+          - delete:rule
+  /api/assets:
+    post:
+      tags:
+        - Rules Engine Execution
+      summary: Performs the rule's execution according to incoming assets
+      description: By taking the incoming assets, this method executes the rule engine and return whatever such rules have programmed to return. This method will fail too for any non-authorized user or if no rule's base is previously provided.
+      operationId: execute-assets
+      consumes:
+        - application/json
+      parameters:
+        - in: body
+          name: assets
+          description: The set of assets to be executed. It could be a single object or an array of them.
+          schema:
+            type: object
+      responses:
+        202:
+          description: Accepted
+        401:
+          description: Unauthorized
+        405:
+          description: Invalid input
+        424:
+          description: Failed dependency
+      security:
+        - braas_auth:
+          - read:base
+          - execute:rule
+  /api/json-schema:
+    post:
+      tags:
+        - Utils
+      summary: Creates a returns an json-schema form incoming zip or jar of classes
+      description: Creates a returns an json-schema form incoming zip or jar of classes
+      operationId: create-json-schema
+      consumes:
+        - multipart/form-data
+        - application/x-www-form-urlencoded
+      parameters:
+        - in: formData
+          name: zip
+          type: file
+          required: false
+          description: Zip file with classes inside
+          x-mimetype: application/zip,application/x-zip-compressed
+        - in: formData
+          name: jar
+          type: file
+          required: false
+          description: Jar file with classes.
+          x-mimetype: application/java-archive
+      responses:
+        201:
+          description: Created
+        202:
+          description: Accepted
+        401:
+          description: Unauthorized
+        405:
+          description: Invalid input
+        409:
+          description: Conflict
+securityDefinitions:
+  braas_auth:
+    type: oauth2
+    authorizationUrl: http://${DEPLOYED_SERVER}/login
+    tokenUrl: http://${DEPLOYED_SERVER}/oauth/token
+    flow: implicit
+    scopes:
+      delete:base: Delete the rule's base
+      write:base: Modify or add the rule's base
+      read:base: Read the rule's base
+      execute:rule: Execute a set of assets according to the rule's base
+      admin: Full administrative rights
+  api_key:
+    type: apiKey
+    name: apiKey
+    in: header

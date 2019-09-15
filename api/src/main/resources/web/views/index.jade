@@ -1,0 +1,122 @@
+extends layout
+block content
+  // Masthead
+  header.masthead.bg-primary.text-white.text-center
+    .container.d-flex.align-items-center.flex-column
+      // Masthead Avatar Image
+      img.masthead-avatar.mb-5(src='img/braas.png', alt='')
+      // Masthead Heading
+      h1.masthead-heading.text-secondary.mb-0= product
+      // Icon Divider
+      .divider-custom.divider-light
+        .divider-custom-line
+        .divider-custom-icon
+          i.fas.fa-star
+        .divider-custom-line
+      // Masthead Subheading
+      p.masthead-subheading.font-weight-light.text-black-50.mb-0= shortDescription
+  // Braas Section
+  section#api.page-section.braas
+    .container
+      // Braas Section Heading
+      h2.page-section-heading.text-center.text-uppercase.text-secondary.mb-0 Api
+      // Icon Divider
+      .divider-custom
+        .divider-custom-line
+        .divider-custom-icon
+          i.fas.fa-star
+        .divider-custom-line
+      // Braas Grid Items
+      .row
+        // Braas Item 1
+        .col-md-6.col-lg-4
+          .braas-item.mx-auto(data-toggle='modal', data-target='#braasModal1')
+            .braas-item-caption.d-flex.align-items-center.justify-content-center.h-100.w-100
+              .braas-item-caption-content.text-center.text-white
+                i.fas.fa-play.fa-3x
+            .container.d-flex.align-items-center.flex-column
+              i.fas.fa-table.fa-3x.text-secondary
+              h4.masthead-subheading.font-weight-light.text-black-50.mb-0 Rules base
+        // Braas Item 2
+        .col-md-6.col-lg-4
+          .braas-item.mx-auto(data-toggle='modal', data-target='#braasModal2')
+            .braas-item-caption.d-flex.align-items-center.justify-content-center.h-100.w-100
+              .braas-item-caption-content.text-center.text-white
+                i.fas.fa-play.fa-3x
+            .container.d-flex.align-items-center.flex-column
+              i.fas.fa-ruler-horizontal.fa-3x.text-secondary
+              h4.masthead-subheading.font-weight-light.text-black-50.mb-0 Execute rules
+        // Braas Item 3
+        .col-md-6.col-lg-4
+          .braas-item.mx-auto(data-toggle='modal', data-target='#braasModal3')
+            .braas-item-caption.d-flex.align-items-center.justify-content-center.h-100.w-100
+              .braas-item-caption-content.text-center.text-white
+                i.fas.fa-play.fa-3x
+            .container.d-flex.align-items-center.flex-column
+              i.fas.fa-cogs.fa-3x.text-secondary
+              h4.masthead-subheading.font-weight-light.text-black-50.mb-0 Utils
+      // /.row
+      // About Section
+      section#about.page-section.bg-primary.text-secondary.mb-0
+        .container
+          // About Section Heading
+          h2.page-section-heading.text-center.text-uppercase.text-secondary About
+          // Icon Divider
+          .divider-custom.divider-light
+            .divider-custom-line
+            .divider-custom-icon
+              i.fas.fa-star
+            .divider-custom-line
+          // About Section Content
+          .row
+            .col-lg-4.ml-auto
+              p.lead.text-black-50
+                | Business Rules as a Service is an API that expose the world famous Rules engine JBOSS Drools as a service by making easy way to configure business rules and apply it to your custom business objects by configuring nothing more than a rules spreadsheet and invoking the proper validation API.
+            .col-lg-4.mr-auto
+              p.lead.text-black-50
+                | You just provide your rule base as a spreadsheet, we do next steps for you!
+          // About Section Button
+          //.text-center.mt-4
+          //  a.btn.btn-xl.btn-outline-light(href='https://github.com/araguacaima/braas')
+          //    i.fas.fa-download.mr-2
+          //    |           Free Download!
+      // Contact Section
+      section#contact.page-section
+        .container
+          // Contact Section Heading
+          h2.page-section-heading.text-center.text-uppercase.text-secondary.mb-0 Contact Us
+          // Icon Divider
+          .divider-custom
+            .divider-custom-line
+            .divider-custom-icon
+              i.fas.fa-star
+            .divider-custom-line
+          // Contact Section Form
+          .row
+            .col-lg-8.mx-auto
+              // To configure the contact form email address, go to mail/contact_me.php and update the email address in the PHP file on line 19.
+              form#contactForm(name='sentMessage', novalidate='novalidate')
+                .control-group
+                  .form-group.floating-label-form-group.controls.mb-0.pb-2
+                    label Name
+                    input#name.form-control(type='text', placeholder='Name', required='required', data-validation-required-message='Please enter your name.')
+                    p.help-block.text-danger
+                .control-group
+                  .form-group.floating-label-form-group.controls.mb-0.pb-2
+                    label Email Address
+                    input#email.form-control(type='email', placeholder='Email Address', required='required', data-validation-required-message='Please enter your email address.')
+                    p.help-block.text-danger
+                .control-group
+                  .form-group.floating-label-form-group.controls.mb-0.pb-2
+                    label Phone Number
+                    input#phone.form-control(type='tel', placeholder='Phone Number (Optional)')
+                    p.help-block.text-danger
+                .control-group
+                  .form-group.floating-label-form-group.controls.mb-0.pb-2
+                    label Message
+                    textarea#message.form-control(rows='5', placeholder='Message', required='required', data-validation-required-message='Please enter a message.')
+                    p.help-block.text-danger
+                br
+                #success
+                .form-group
+                  button#sendMessageButton.btn.btn-secondary.btn-xl(type='submit') Send

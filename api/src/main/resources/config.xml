@@ -1,0 +1,86 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<workbook>
+    <worksheet idx="0">
+        <loop startRow="0" endRow="0" items="emptyCollection1" var="emptyCollection1" varType="java.lang.String">
+            <section/>
+            <loopbreakcondition>
+                <rowcheck offset="0">
+                    <cellcheck offset="0">Question</cellcheck>
+                    <cellcheck offset="1">Answer 0</cellcheck>
+                    <cellcheck offset="2">Answer 1</cellcheck>
+                    <cellcheck offset="3">Answer 2</cellcheck>
+                    <cellcheck offset="4">Answer 3</cellcheck>
+                    <cellcheck offset="5">Answer 4</cellcheck>
+                    <cellcheck offset="6">Answer 5</cellcheck>
+                    <cellcheck offset="7">Answer 6</cellcheck>
+                    <cellcheck offset="8">Answer 7</cellcheck>
+                    <cellcheck offset="9">Answer 8</cellcheck>
+                    <cellcheck offset="10">Answer 9</cellcheck>
+                    <cellcheck offset="11">Right Answers Index</cellcheck>
+                    <cellcheck offset="12">Follow Up</cellcheck>
+                    <cellcheck offset="13">Category 1</cellcheck>
+                    <cellcheck offset="14">Category 2</cellcheck>
+                    <cellcheck offset="15">Category 3</cellcheck>
+                    <cellcheck offset="16">Category 4</cellcheck>
+                    <cellcheck offset="17">Category 5</cellcheck>
+                    <cellcheck offset="18">Category 6</cellcheck>
+                    <cellcheck offset="19">Category 7</cellcheck>
+                    <cellcheck offset="20">Category 8</cellcheck>
+                    <cellcheck offset="21">Category 9</cellcheck>
+                    <cellcheck offset="22">Category 10</cellcheck>
+                </rowcheck>
+            </loopbreakcondition>
+        </loop>
+        <loop items="triviaCollection" var="trivia"
+              varType="com.araguacaima.trivias.TriviaInput">
+            <section>
+                <mapping row="1" col="0">trivia.question</mapping>
+                <mapping row="1" col="1">trivia.answer0</mapping>
+                <mapping row="1" col="2">trivia.answer1</mapping>
+                <mapping row="1" col="3">trivia.answer2</mapping>
+                <mapping row="1" col="4">trivia.answer3</mapping>
+                <mapping row="1" col="5">trivia.answer4</mapping>
+                <mapping row="1" col="6">trivia.answer5</mapping>
+                <mapping row="1" col="7">trivia.answer6</mapping>
+                <mapping row="1" col="8">trivia.answer7</mapping>
+                <mapping row="1" col="9">trivia.answer8</mapping>
+                <mapping row="1" col="10">trivia.answer9</mapping>
+                <mapping row="1" col="11">trivia.rightAnswersIndex</mapping>
+                <mapping row="1" col="12">trivia.followUp</mapping>
+                <mapping row="1" col="13">trivia.category1</mapping>
+                <mapping row="1" col="14">trivia.category2</mapping>
+                <mapping row="1" col="15">trivia.category3</mapping>
+                <mapping row="1" col="16">trivia.category4</mapping>
+                <mapping row="1" col="17">trivia.category5</mapping>
+                <mapping row="1" col="18">trivia.category6</mapping>
+                <mapping row="1" col="19">trivia.category7</mapping>
+                <mapping row="1" col="20">trivia.category8</mapping>
+                <mapping row="1" col="21">trivia.category9</mapping>
+                <mapping row="1" col="22">trivia.category10</mapping>
+            </section>
+            <loopbreakcondition>
+                <rowcheck offset="1"/>
+                <rowcheck offset="2"/>
+                <rowcheck offset="3"/>
+                <rowcheck offset="4"/>
+                <rowcheck offset="5"/>
+                <rowcheck offset="6"/>
+                <rowcheck offset="7"/>
+                <rowcheck offset="8"/>
+                <rowcheck offset="9"/>
+                <rowcheck offset="10"/>
+                <rowcheck offset="11"/>
+                <rowcheck offset="12"/>
+                <rowcheck offset="13"/>
+                <rowcheck offset="14"/>
+                <rowcheck offset="15"/>
+                <rowcheck offset="16"/>
+                <rowcheck offset="17"/>
+                <rowcheck offset="18"/>
+                <rowcheck offset="19"/>
+                <rowcheck offset="20"/>
+            </loopbreakcondition>
+        </loop>
+
+    </worksheet>
+</workbook>

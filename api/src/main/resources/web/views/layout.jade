@@ -1,0 +1,157 @@
+doctype html
+html(lang="en")
+  head
+    title= title
+    block head
+      meta(charset='utf-8')
+      meta(name='viewport', content='width=device-width, initial-scale=1, shrink-to-fit=no')
+      meta(http-equiv='content-type', content='text/html; charset=utf-8')
+      meta(http-equiv="X-UA-Compatible", content="IE=edge")
+      meta(name="description", content="Bussines Rules as a Service")
+      meta(name="author", content="Alejandro Manuel Méndez Araguacaima [araguacaima@gmail.com]")
+    block styles
+      // Custom fonts for this theme
+      //link(href='vendor//fontawesome-free/css/all.min.css', rel='stylesheet', type='text/css')
+      link(href='vendor//fontawesome-free/css/all.css', rel='stylesheet', type='text/css')
+      link(href='https://fonts.googleapis.com/css?family=Montserrat:400,700', rel='stylesheet', type='text/css')
+      link(href='https://fonts.googleapis.com/css?family=Lato:400,700,400italic,700italic', rel='stylesheet', type='text/css')
+      // Theme CSS
+      //link(href='css/braas.min.css', rel='stylesheet', type='text/css')
+      link(href='css/braas.css', rel='stylesheet', type='text/css')
+  body#page-top
+    // Navigation
+    nav#mainNav.navbar.navbar-expand-lg.bg-secondary.fixed-top(style="padding-top: 0; padding-bottom: 0;")
+      .container
+        a.navbar-brand.js-scroll-trigger(href='/')= title
+        button.navbar-toggler.navbar-toggler-right.text-uppercase.font-weight-bold.bg-primary.text-secondary.rounded(type='button', data-toggle='collapse', data-target='#navbarResponsive', aria-controls='navbarResponsive', aria-expanded='false', aria-label='Toggle navigation')
+          | Menu
+          i.fas.fa-bars.pl-2
+        #navbarResponsive.collapse.navbar-collapse
+          ul.navbar-nav.ml-auto
+            li.nav-item.mx-0.mx-lg-1
+              a.nav-link.py-3.px-0.px-lg-3.rounded.js-scroll-trigger(href='#api') Api
+            li.nav-item.mx-0.mx-lg-1
+              a.nav-link.py-3.px-0.px-lg-3.rounded.js-scroll-trigger(href='#about') About
+            li.nav-item.mx-0.mx-lg-1
+              a.nav-link.py-3.px-0.px-lg-3.rounded.js-scroll-trigger(href='#contact') Contact
+    block content
+      // Braas Modals
+      // Braas Modal 1
+    #braasModal1.braas-modal.modal.fade(tabindex='-1', role='dialog', aria-labelledby='braasModal1Label', aria-hidden='true')
+      .modal-dialog.modal-xl(role='document')
+        .modal-content
+          button.close(type='button', data-dismiss='modal', aria-label='Close')
+            span(aria-hidden='true')
+              i.fas.fa-times.text-secondary
+          .modal-body.text-center
+            .container
+              .row.justify-content-center
+                .col-lg-8
+                  // Braas Modal - Title
+                  h2.braas-modal-title.text-secondary.text-uppercase.mb-0 Rules base
+                  // Icon Divider
+                  .divider-custom
+                    .divider-custom-line
+                    .divider-custom-icon
+                      i.fas.fa-star
+                    .divider-custom-line
+                  // Braas Modal - Image
+                  .container.d-flex.align-items-center.flex-column
+                    i.fas.fa-table.fa-3x.text-secondary
+                  // Braas Modal - Text
+                  p.mb-5
+                    | This API help you to define your own rules base as a spreadsheet loaded from a locally file or even remotely thru a Google Drive Spreadsheet
+                  a.btn.btn-success(href='/api')
+                    | Go to API
+    // Braas Modal 2
+    #braasModal2.braas-modal.modal.fade(tabindex='-1', role='dialog', aria-labelledby='braasModal2Label', aria-hidden='true')
+      .modal-dialog.modal-xl(role='document')
+        .modal-content
+          button.close(type='button', data-dismiss='modal', aria-label='Close')
+            span(aria-hidden='true')
+              i.fas.fa-times.text-secondary
+          .modal-body.text-center
+            .container
+              .row.justify-content-center
+                .col-lg-8
+                  // Braas Modal - Title
+                  h2.braas-modal-title.text-secondary.text-uppercase.mb-0 Rules Engine Execution
+                  // Icon Divider
+                  .divider-custom
+                    .divider-custom-line
+                    .divider-custom-icon
+                      i.fas.fa-star
+                    .divider-custom-line
+                  // Braas Modal - Image
+                  .container.d-flex.align-items-center.flex-column
+                    i.fas.fa-ruler-horizontal.fa-3x.text-secondary
+                  // Braas Modal - Text
+                  p.mb-5
+                    | Once you've defined the rules base, you can use these API to pass your custom object to the rules engine
+                  a.btn.btn-success(href='/api')
+                    | Go to API
+    // Braas Modal 3
+    #braasModal3.braas-modal.modal.fade(tabindex='-1', role='dialog', aria-labelledby='braasModal3Label', aria-hidden='true')
+      .modal-dialog.modal-xl(role='document')
+        .modal-content
+          button.close(type='button', data-dismiss='modal', aria-label='Close')
+            span(aria-hidden='true')
+              i.fas.fa-times.text-secondary
+          .modal-body.text-center
+            .container
+              .row.justify-content-center
+                .col-lg-8
+                  // Braas Modal - Title
+                  h2.braas-modal-title.text-secondary.text-uppercase.mb-0 Utils
+                  // Icon Divider
+                  .divider-custom
+                    .divider-custom-line
+                    .divider-custom-icon
+                      i.fas.fa-star
+                    .divider-custom-line
+                  // Braas Modal - Image
+                  .container.d-flex.align-items-center.flex-column
+                    i.fas.fa-cogs.fa-3x.text-secondary
+                  // Braas Modal - Text
+                  p.mb-5
+                    | Some extra utilities
+                  a.btn.btn-success(href='/api')
+                    | Go to API
+    // Footer
+    footer.footer.text-center
+      .container
+        .row
+          // Footer Social Icons
+          .col.mb-5.mb-lg-0
+            h4.text-uppercase.mb-4 Around the Web
+            a.btn.btn-outline-light.btn-social.mx-1(href='#')
+              i.fab.fa-fw.fa-twitter
+            a.btn.btn-outline-light.btn-social.mx-1(href='#')
+              i.fab.fa-fw.fa-linkedin-in
+          // Footer About Text
+          .col
+            h4.text-uppercase.mb-4 About BraaS
+            p.lead.mb-0
+              | Created by
+              a(href='http://www.araguacaima.com') araguacaima
+              | .
+    // Copyright Section
+    section.copyright.py-2.text-center.text-white
+      .container
+        small Copyright © araguacaima - braas (2019)
+    // Scroll to Top Button (Only visible on small and extra-small screen sizes)
+    .scroll-to-top.d-lg-none.position-fixed
+      a.js-scroll-trigger.d-block.text-center.text-white.rounded(href='#page-top')
+        i.fa.fa-chevron-up
+    block scripts
+      // Bootstrap core JavaScript
+      script(src='vendor/jquery/jquery.min.js')
+      script(src='vendor/bootstrap/js/bootstrap.bundle.min.js')
+      // Plugin JavaScript
+      script(src='vendor/jquery-easing/jquery.easing.min.js')
+      // Contact Form JavaScript
+      script(src='js/jqBootstrapValidation.js')
+      script(src='js/contact_me.js')
+      // Custom scripts for this template
+      //script(src='js/braas.min.js')
+      script(src='js/braas.js')

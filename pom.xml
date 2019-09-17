@@ -186,10 +186,10 @@
             <artifactId>gson</artifactId>
         </dependency>
 
-        <dependency>
+<!--        <dependency>
             <groupId>org.apache.poi</groupId>
             <artifactId>poi</artifactId>
-        </dependency>
+        </dependency>-->
 
     </dependencies>
 

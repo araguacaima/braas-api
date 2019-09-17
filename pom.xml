@@ -16,6 +16,38 @@
         <relativePath>../pom.xml</relativePath>
     </parent>
 
+    <licenses>
+        <license>
+            <name>Apache License, Version 2.0</name>
+            <url>http://www.apache.org/licenses/LICENSE-2.0.tnxt</url>
+            <distribution>repo</distribution>
+        </license>
+    </licenses>
+
+    <developers>
+        <developer>
+            <name>Alejandro Manuel Méndez Araguacaima</name>
+            <email>araguacaima@gmail.com</email>
+        </developer>
+    </developers>
+
+    <scm>
+        <connection>scm:git:git://github.com/araguacaima/braas-api.git</connection>
+        <developerConnection>scm:git:ssh://github.com:araguacaima/braas-api.git</developerConnection>
+        <url>https://github.com/araguacaima/braas/tree/master</url>
+    </scm>
+
+    <distributionManagement>
+        <snapshotRepository>
+            <id>ossrh</id>
+            <url>https://oss.sonatype.org/content/repositories/snapshots</url>
+        </snapshotRepository>
+        <repository>
+            <id>ossrh</id>
+            <url>https://oss.sonatype.org/service/local/staging/deploy/maven2/</url>
+        </repository>
+    </distributionManagement>
+
     <dependencies>
         <dependency>
             <groupId>cz.jirutka.rsql</groupId>

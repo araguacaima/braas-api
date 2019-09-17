@@ -4,6 +4,7 @@ import com.araguacaima.braas.api.BeanBuilder;
 import com.araguacaima.braas.api.Server;
 import com.araguacaima.braas.api.common.Commons;
 import com.araguacaima.braas.core.drools.DroolsConfig;
+import com.araguacaima.braas.core.drools.DroolsUtils;
 import com.araguacaima.commons.utils.*;
 import com.fasterxml.jackson.databind.exc.MismatchedInputException;
 import com.github.victools.jsonschema.generator.Option;
@@ -264,6 +265,17 @@ public class Api implements RouteGroup {
                 response.status(HTTP_INTERNAL_ERROR);
             }
             return EMPTY_RESPONSE;
+        });
+        post(ASSETS, (request, response) -> {
+            final SparkWebContext ctx = new SparkWebContext(request, response);
+            DroolsConfig droolsConfig = (DroolsConfig) ctx.getSessionAttribute("drools-config");
+            DroolsUtils droolsUtils = new DroolsUtils(droolsConfig);
+            String assetsStr = request.body();
+            Map assets = jsonUtils.fromJSON(assetsStr, Map.class);
+            Collection results = droolsUtils.executeRules(assets);
+            response.status(HTTP_ACCEPTED);
+            response.type(JSON_CONTENT_TYPE);
+            return jsonUtils.toJSON(results);
         });
     }
 

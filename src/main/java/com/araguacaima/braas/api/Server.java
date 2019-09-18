@@ -102,7 +102,8 @@ public class Server {
         before((request, response) -> {
             String sessionId;
             final SparkWebContext ctx = new SparkWebContext(request, response);
-            sessionId = (String) ctx.getSessionAttribute(SESSION_ID_PARAM);
+            String storedSessionId = (String) ctx.getSessionAttribute(SESSION_ID_PARAM);
+            sessionId = storedSessionId;
 
             if (StringUtils.isBlank(sessionId)) {
                 sessionId = request.cookie("braas-session-id");
@@ -115,10 +116,15 @@ public class Server {
             if (StringUtils.isBlank(sessionId)) {
                 sessionId = UUID.randomUUID().toString();
             }
-
-            if (StringUtils.isBlank ((String)ctx.getSessionAttribute(SESSION_ID_PARAM))) {
+            File tempDir = null;
+            if (StringUtils.isNotBlank(storedSessionId)) {
                 File baseDir = new File(System.getProperty("java.io.tmpdir"));
-                File tempDir = new File(baseDir, sessionId);
+                tempDir = new File(baseDir, sessionId);
+            }
+
+            if (StringUtils.isBlank(storedSessionId) || tempDir == null) {
+                File baseDir = new File(System.getProperty("java.io.tmpdir"));
+                tempDir = new File(baseDir, sessionId);
                 if (!tempDir.exists()) {
                     tempDir = FileUtils.createTempDir(sessionId);
                 }

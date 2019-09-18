@@ -308,6 +308,25 @@ public class Api implements RouteGroup {
                     jsonSchema.put("$schema", "http://json-schema.org/draft-07/schema#");
                     ids.add(id);
                     definitionMap.putAll(map_);
+
+                    //fixing $ref properties
+                    LinkedHashMap properties = (LinkedHashMap) jsonSchema.get("properties");
+                    if (MapUtils.isNotEmpty(properties)) {
+                        for (Object key : properties.keySet()) {
+                            LinkedHashMap value = (LinkedHashMap) properties.get(key);
+                            String innerId = (String) value.get("$id");
+                            if (StringUtils.isNotBlank(innerId) && innerId.contains(".")) {
+                                value.clear();
+                                value.put("$ref", "#/definitions/" + innerId.replaceAll("\\.", "/"));
+                                LinkedHashMap definitions = (LinkedHashMap) jsonSchema.get("definitions");
+                                if (definitions == null) {
+                                    definitions = new LinkedHashMap();
+                                    jsonSchema.put("definitions", definitions);
+                                }
+                                definitions.put(innerId, "");
+                            }
+                        }
+                    }
                 } catch (Throwable t) {
                     t.printStackTrace();
                 }
@@ -320,26 +339,48 @@ public class Api implements RouteGroup {
     private void definitionsToClasses(LinkedHashMap<String, LinkedHashMap> definitions, Set<String> ids, File rootDirectory) throws IOException {
         for (String id : ids) {
             Map map = getLastValueFromPackageName(id, definitions);
-            String className;
-            String packageName;
-            if (id.contains(".")) {
-                className = id.substring(id.lastIndexOf('.') + 1);
-                packageName = id.substring(0, id.lastIndexOf('.'));
-            } else {
-                className = id;
-                packageName = StringUtils.EMPTY;
+            if (map != null) {
+                PackageClass packageClass = new PackageClass(id).invoke();
+                String className = packageClass.getClassName();
+                String packageName = packageClass.getPackageName();
+                LinkedHashMap result = new LinkedHashMap();
+                LinkedHashMap map1 = (LinkedHashMap) map.get("definitions");
+                if (map1 != null) {
+                    for (Object keyObj : map1.keySet()) {
+                        String key = keyObj.toString();
+                        Map value = getLastValueFromPackageName(key, definitions);
+                        if (value != null) {
+                            packageClass = new PackageClass(key).invoke();
+                            String className_ = packageClass.getClassName();
+                            String packageName_ = packageClass.getPackageName();
+                            LinkedHashMap<String, LinkedHashMap> map_ = createKeysFromPackageName(packageName_, result);
+                            value.remove("$id");
+                            value.remove("$schema");
+                            value.remove("definitions");
+                            Map value_ = getLastValueFromPackageName(key, map_);
+                            if (value_ == null) {
+                                value_ = getLastValueFromPackageName(packageName_, map_);
+                                value_.put(className_, value);
+                            } else {
+                                value_.putAll(value);
+                            }
+                            result.putAll(map_);
+                        }
+                    }
+                }
+                map.put("definitions", result);
+                jsonToClass(jsonUtils.toJSON(map), StringUtils.capitalize(className), packageName, rootDirectory);
             }
-            jsonToClass(jsonUtils.toJSON(map), StringUtils.capitalize(className), packageName, rootDirectory);
         }
     }
 
     private static void jsonToClass(String json, String className, String packageName, File rootDirectory) throws IOException {
-        if (!className.contains("$")) {
+        //if (!className.contains("$")) {
             JCodeModel codeModel = new JCodeModel();
             SchemaMapper mapper = new SchemaMapper(new RuleFactory(config, new NoopAnnotator(), new SchemaStore()), new SchemaGenerator());
             mapper.generate(codeModel, className, packageName, json);
             codeModel.build(rootDirectory);
-        }
+        //}
     }
 
     private Map getLastValueFromPackageName(String key, Map parentMap) {
@@ -351,7 +392,7 @@ public class Api implements RouteGroup {
         if (map == null) {
             return null;
         } else {
-            String remaining = key.replaceFirst(entry, StringUtils.EMPTY);
+            String remaining = key.substring(entry.length());
             if (remaining.startsWith(".")) {
                 remaining = remaining.substring(1);
             }
@@ -394,7 +435,7 @@ public class Api implements RouteGroup {
     }
 
     public static String jsonToString(String json, String className, String packageName) throws IOException {
-        if (!className.contains("$")) {
+        //if (!className.contains("$")) {
             JCodeModel codeModel = new JCodeModel();
             SchemaMapper mapper = new SchemaMapper(new RuleFactory(config, new NoopAnnotator(), new SchemaStore()), new SchemaGenerator());
             mapper.generate(codeModel, className, packageName, json);
@@ -402,8 +443,8 @@ public class Api implements RouteGroup {
             ByteArrayOutputStream buff = new ByteArrayOutputStream();
             codeModel.build((new SingleStreamCodeWriter(buff)));
             return buff.toString(Charset.forName("UTF-8").name());
-        }
-        return null;
+        //}
+        //return null;
     }
 
     public static void compileSources(File javaSourcesFile, File outputDirectory) throws IOException {
@@ -416,9 +457,9 @@ public class Api implements RouteGroup {
 
         List<JavaFileObject> fileObjects = new ArrayList<>();
         for (File file : sourceFiles) {
-            if (!file.getName().contains("$")) {
+            //if (!file.getName().contains("$")) {
                 fileObjects.add(new JavaSourceFromString(file.toURI(), FileUtils.readFileToString(file, Charset.forName("UTF-8"))));
-            }
+            //}
         }
         List<String> options = Arrays.asList("-classpath", classLoaderUtils.getClasspath(), "-d", outputDirectory.getCanonicalPath());
         DiagnosticCollector<JavaFileObject> diagnostics = new DiagnosticCollector<>();
@@ -490,4 +531,32 @@ public class Api implements RouteGroup {
         }
     }
 
+    private class PackageClass {
+        private String id;
+        private String className;
+        private String packageName;
+
+        public PackageClass(String id) {
+            this.id = id;
+        }
+
+        public String getClassName() {
+            return className;
+        }
+
+        public String getPackageName() {
+            return packageName;
+        }
+
+        public PackageClass invoke() {
+            if (id.contains(".")) {
+                className = id.substring(id.lastIndexOf('.') + 1);
+                packageName = id.substring(0, id.lastIndexOf('.'));
+            } else {
+                className = id;
+                packageName = StringUtils.EMPTY;
+            }
+            return this;
+        }
+    }
 }

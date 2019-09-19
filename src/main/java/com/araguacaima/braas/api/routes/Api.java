@@ -22,7 +22,10 @@ import spark.RouteGroup;
 
 import javax.servlet.http.Part;
 import javax.tools.*;
-import java.io.*;
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.OutputStream;
 import java.net.URI;
 import java.nio.charset.Charset;
 import java.nio.file.Files;
@@ -115,25 +118,9 @@ public class Api implements RouteGroup {
     private static NoopAnnotator noopAnnotator = new NoopAnnotator();
     private static SchemaStore schemaStore = new SchemaStore();
     private static SchemaGenerator schemaGenerator = new SchemaGenerator();
-    private static Writer directoryClassWriter = new Writer() {
-        @Override
-        public void write(char[] cbuf, int off, int len) throws IOException {
-            log.error("test write");
-        }
-
-        @Override
-        public void flush() throws IOException {
-            log.error("test flush");
-        }
-
-        @Override
-        public void close() throws IOException {
-            log.error("test close");
-        }
-    };
+    private static FileUtils fileUtils = new FileUtils();
     private ZipUtils zipUtils = new ZipUtils();
     private JarUtils jarUtils = new JarUtils();
-    private static FileUtils fileUtils = new FileUtils();
     private static ClassLoaderUtils classLoaderUtils = new ClassLoaderUtils(null);
     private Collection<Option> with = ImmutableList.of(Option.FLATTENED_ENUMS, Option.SIMPLIFIED_ENUMS, Option.DEFINITIONS_FOR_ALL_OBJECTS);
     private Collection<Option> without = null;
@@ -304,20 +291,19 @@ public class Api implements RouteGroup {
     }
 
     public static void compileSources(File javaSourcesFile, File outputDirectory) throws IOException {
-        ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
         File[] sourceFiles = org.apache.commons.io.FileUtils.listFiles(javaSourcesFile, new String[]{"java"}, true).toArray(new File[]{});
         JavaCompiler javaCompiler = ToolProvider.getSystemJavaCompiler();
         OutputStreamJavaFileManager<JavaFileManager> fileManager =
                 new OutputStreamJavaFileManager<>(
-                        javaCompiler.getStandardFileManager(null, null, null), byteArrayOutputStream);
+                        javaCompiler.getStandardFileManager(null, null, null), outputDirectory);
 
         List<JavaFileObject> fileObjects = new ArrayList<>();
         for (File file : sourceFiles) {
             fileObjects.add(new JavaSourceFromString(file.toURI(), FileUtils.readFileToString(file, Charset.forName("UTF-8"))));
         }
-        List<String> options = Arrays.asList("-classpath", classLoaderUtils.getClasspath(), "-d", outputDirectory.getCanonicalPath());
+        List<String> options = Arrays.asList("-classpath", classLoaderUtils.getClasspath());
         DiagnosticCollector<JavaFileObject> diagnostics = new DiagnosticCollector<>();
-        JavaCompiler.CompilationTask task = javaCompiler.getTask(directoryClassWriter, fileManager, diagnostics, options, null, fileObjects);
+        JavaCompiler.CompilationTask task = javaCompiler.getTask(null, fileManager, diagnostics, options, null, fileObjects);
         if (!task.call()) {
             StringBuilder errorMsg = new StringBuilder();
             for (Diagnostic d : diagnostics.getDiagnostics()) {
@@ -496,17 +482,25 @@ public class Api implements RouteGroup {
 
     private static class OutputStreamJavaFileManager<M extends JavaFileManager>
             extends ForwardingJavaFileManager<M> {
-        private OutputStream outputStream;
+        private File outputDirectory;
 
-        protected OutputStreamJavaFileManager(final M fileManager, final OutputStream outputStream) {
+        protected OutputStreamJavaFileManager(final M fileManager, final File outputDirectory) {
             super(fileManager);
-            this.outputStream = outputStream;
+            this.outputDirectory = outputDirectory;
         }
 
         @Override
         public JavaFileObject getJavaFileForOutput(final JavaFileManager.Location location,
                                                    final String className, final JavaFileObject.Kind kind, final FileObject sibling) {
-            return new OutputStreamSimpleFileObject(new File(className).toURI(), kind, outputStream);
+            try {
+                PackageClass packageClass = PackageClass.instance(className);
+                File outputFile = FileUtils.makeDirFromPackageName(outputDirectory, packageClass.getPackageName());
+                outputFile = new File(outputFile, packageClass.getClassName());
+                return new OutputStreamSimpleFileObject(new File(className).toURI(), kind, new FileOutputStream(outputFile));
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+            return null;
         }
     }
 

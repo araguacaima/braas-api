@@ -32,4 +32,8 @@ public class PackageClass {
         }
         return this;
     }
+
+    public static PackageClass instance(String id) {
+        return new PackageClass(id).invoke();
+    }
 }

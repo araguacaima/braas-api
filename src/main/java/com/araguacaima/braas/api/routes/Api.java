@@ -12,7 +12,6 @@ import com.fasterxml.jackson.databind.exc.MismatchedInputException;
 import com.github.victools.jsonschema.generator.Option;
 import com.google.common.collect.ImmutableList;
 import com.sun.codemodel.JCodeModel;
-import com.sun.codemodel.writer.SingleStreamCodeWriter;
 import org.apache.commons.io.filefilter.SuffixFileFilter;
 import org.apache.commons.io.filefilter.TrueFileFilter;
 import org.jsonschema2pojo.*;
@@ -23,10 +22,7 @@ import spark.RouteGroup;
 
 import javax.servlet.http.Part;
 import javax.tools.*;
-import java.io.ByteArrayOutputStream;
-import java.io.File;
-import java.io.IOException;
-import java.io.OutputStream;
+import java.io.*;
 import java.net.URI;
 import java.nio.charset.Charset;
 import java.nio.file.Files;
@@ -119,6 +115,22 @@ public class Api implements RouteGroup {
     private static NoopAnnotator noopAnnotator = new NoopAnnotator();
     private static SchemaStore schemaStore = new SchemaStore();
     private static SchemaGenerator schemaGenerator = new SchemaGenerator();
+    private static Writer directoryClassWriter = new Writer() {
+        @Override
+        public void write(char[] cbuf, int off, int len) throws IOException {
+            log.error("test write");
+        }
+
+        @Override
+        public void flush() throws IOException {
+            log.error("test flush");
+        }
+
+        @Override
+        public void close() throws IOException {
+            log.error("test close");
+        }
+    };
     private ZipUtils zipUtils = new ZipUtils();
     private JarUtils jarUtils = new JarUtils();
     private static FileUtils fileUtils = new FileUtils();
@@ -284,21 +296,11 @@ public class Api implements RouteGroup {
         });
     }
 
-    private static void jsonToClass(String json, String className, String packageName, File rootDirectory) throws IOException, NoSuchFieldException, IllegalAccessException {
+    private static void jsonToSourceClassFile(String json, String className, String packageName, File rootDirectory) throws IOException, NoSuchFieldException, IllegalAccessException {
         JCodeModel codeModel = new JCodeModel();
         SchemaMapper mapper = new SchemaMapper(new RuleFactory(config, noopAnnotator, schemaStore, DEFINITIONS_ROOT), schemaGenerator);
         mapper.generate(codeModel, className, packageName, json);
         codeModel.build(rootDirectory);
-    }
-
-    public static String jsonToString(String json, String className, String packageName) throws IOException, NoSuchFieldException, IllegalAccessException {
-        JCodeModel codeModel = new JCodeModel();
-        SchemaMapper mapper = new SchemaMapper(new RuleFactory(config, new NoopAnnotator(), new SchemaStore(), DEFINITIONS_ROOT), new SchemaGenerator());
-        mapper.generate(codeModel, className, packageName, json);
-
-        ByteArrayOutputStream buff = new ByteArrayOutputStream();
-        codeModel.build((new SingleStreamCodeWriter(buff)));
-        return buff.toString(Charset.forName("UTF-8").name());
     }
 
     public static void compileSources(File javaSourcesFile, File outputDirectory) throws IOException {
@@ -315,7 +317,7 @@ public class Api implements RouteGroup {
         }
         List<String> options = Arrays.asList("-classpath", classLoaderUtils.getClasspath(), "-d", outputDirectory.getCanonicalPath());
         DiagnosticCollector<JavaFileObject> diagnostics = new DiagnosticCollector<>();
-        JavaCompiler.CompilationTask task = javaCompiler.getTask(null, fileManager, diagnostics, options, null, fileObjects);
+        JavaCompiler.CompilationTask task = javaCompiler.getTask(directoryClassWriter, fileManager, diagnostics, options, null, fileObjects);
         if (!task.call()) {
             StringBuilder errorMsg = new StringBuilder();
             for (Diagnostic d : diagnostics.getDiagnostics()) {
@@ -386,7 +388,7 @@ public class Api implements RouteGroup {
         try {
             Map<String, String> jsonSchema = jsonUtils.fromJSON(json, Map.class);
             String id = jsonSchema.get("$id");
-            jsonToClass(json, id, packageName, sourceFilesDirectory);
+            jsonToSourceClassFile(json, id, packageName, sourceFilesDirectory);
         } catch (MismatchedInputException ignored) {
             Collection<Map<String, Object>> jsonSchemas = jsonUtils.fromJSON(json, Collection.class);
             Set<String> ids = new LinkedHashSet<>();
@@ -472,7 +474,7 @@ public class Api implements RouteGroup {
                     }
                 }
                 map.put(DEFINITIONS_ROOT, result);
-                jsonToClass(jsonUtils.toJSON(map), StringUtils.capitalize(className), packageName, rootDirectory);
+                jsonToSourceClassFile(jsonUtils.toJSON(map), StringUtils.capitalize(className), packageName, rootDirectory);
             }
         }
     }

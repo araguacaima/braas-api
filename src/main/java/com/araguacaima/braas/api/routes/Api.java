@@ -22,10 +22,7 @@ import spark.RouteGroup;
 
 import javax.servlet.http.Part;
 import javax.tools.*;
-import java.io.File;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.io.OutputStream;
+import java.io.*;
 import java.net.URI;
 import java.nio.charset.Charset;
 import java.nio.file.Files;
@@ -316,6 +313,11 @@ public class Api implements RouteGroup {
         }
         fileManager.close();
         fileManager.flush();
+
+        File[] compiledFiles = org.apache.commons.io.FileUtils.listFiles(outputDirectory, new String[]{"class"}, true).toArray(new File[]{});
+        for (File file : compiledFiles) {
+            classLoaderUtils.addToClasspath(file.getCanonicalPath());
+        }
     }
 
     private Map getLastValueFromPackageName(String key, Map parentMap) {
@@ -492,15 +494,22 @@ public class Api implements RouteGroup {
         @Override
         public JavaFileObject getJavaFileForOutput(final JavaFileManager.Location location,
                                                    final String className, final JavaFileObject.Kind kind, final FileObject sibling) {
+            OutputStream outputStream = null;
             try {
                 PackageClass packageClass = PackageClass.instance(className);
-                File outputFile = FileUtils.makeDirFromPackageName(outputDirectory, packageClass.getPackageName());
-                outputFile = new File(outputFile, packageClass.getClassName());
-                return new OutputStreamSimpleFileObject(new File(className).toURI(), kind, new FileOutputStream(outputFile));
+                String package_ = packageClass.getPackageName();
+                String class_ = packageClass.getClassName();
+                if (!class_.contains("$")) {
+                    File outputFile = FileUtils.makeDirFromPackageName(outputDirectory, package_);
+                    outputFile = new File(outputFile, class_ + ".class");
+                    outputStream = new FileOutputStream(outputFile);
+                } else {
+                    outputStream = new ByteArrayOutputStream();
+                }
             } catch (IOException e) {
                 e.printStackTrace();
             }
-            return null;
+            return new OutputStreamSimpleFileObject(new File(className).toURI(), kind, outputStream);
         }
     }
 

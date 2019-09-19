@@ -18,9 +18,7 @@ package com.araguacaima.braas.api.jsonschema;
 
 import com.araguacaima.commons.utils.ReflectionUtils;
 import com.fasterxml.jackson.databind.JsonNode;
-import com.sun.codemodel.JCodeModel;
-import com.sun.codemodel.JDefinedClass;
-import com.sun.codemodel.JPackage;
+import com.sun.codemodel.*;
 import org.apache.commons.lang3.StringUtils;
 import org.jsonschema2pojo.GenerationConfig;
 import org.jsonschema2pojo.Schema;
@@ -87,21 +85,37 @@ public class PropertyRule extends org.jsonschema2pojo.rules.PropertyRule {
                 }
                 PackageClass packageClass = new PackageClass(ref).invoke();
                 ref = packageClass.getPackageName();
-                JCodeModel owner = jclass.owner();
-                JPackage newPackage = owner._package(ref);
                 String className = packageClass.getClassName();
-                JDefinedClass storedClass = newPackage._getClass(className);
-
-                if (storedClass == null) {
-                    Field field = reflectionUtils.getField(JPackage.class, "classes");
-                    try {
-                        field.setAccessible(true);
-                        Map<String, JDefinedClass> classes = (Map<String, JDefinedClass>) field.get(newPackage);
-                        classes.put(className, jclass);
-                        field.set(newPackage, jclass);
-                        owner.rootPackage().remove(jclass);
-                    } catch (IllegalAccessException e) {
-                        e.printStackTrace();
+                JFieldVar fieldVar = jclass.fields().get(nodeName);
+                if (fieldVar != null) {
+                    JType type = fieldVar.type();
+                    if (type.getClass().isAssignableFrom(JDefinedClass.class)) {
+                        JDefinedClass jDefinedClass = (JDefinedClass) type;
+                        JPackage jPackage = jDefinedClass._package();
+                        if (!jPackage.name().equals(ref)) {
+                            Field fieldOuter = reflectionUtils.getField(JDefinedClass.class, "outer");
+                            try {
+                                fieldOuter.setAccessible(true);
+                                JClassContainer outer = (JClassContainer) fieldOuter.get(type);
+                                if (outer.isPackage()) {
+                                    JCodeModel owner = jclass.owner();
+                                    JPackage newPackage = owner._package(ref);
+                                    fieldOuter.set(type, newPackage);
+                                    Field fieldClasses = reflectionUtils.getField(JPackage.class, "classes");
+                                    try {
+                                        fieldClasses.setAccessible(true);
+                                        Map<String, JDefinedClass> classesNew = (Map<String, JDefinedClass>) fieldClasses.get(newPackage);
+                                        classesNew.put(className, jDefinedClass);
+                                        Map<String, JDefinedClass> classesOld = (Map<String, JDefinedClass>) fieldClasses.get(outer);
+                                        classesOld.remove(className);
+                                    } catch (Throwable t) {
+                                        t.printStackTrace();
+                                    }
+                                }
+                            } catch (Throwable t) {
+                                t.printStackTrace();
+                            }
+                        }
                     }
                 }
             }

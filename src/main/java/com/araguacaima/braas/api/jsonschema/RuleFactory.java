@@ -18,7 +18,7 @@ public class RuleFactory extends org.jsonschema2pojo.rules.RuleFactory {
     public RuleFactory(GenerationConfig generationConfig, Annotator annotator, SchemaStore schemaStore, String definitionsRoot) throws NoSuchFieldException, IllegalAccessException {
         super(generationConfig, annotator, schemaStore);
         this.definitionsRoot = definitionsRoot;
-        Field field = org.jsonschema2pojo.rules.RuleFactory.class.getField("nameHelper");
+        Field field = org.jsonschema2pojo.rules.RuleFactory.class.getDeclaredField("nameHelper");
         field.setAccessible(true);
 
         Field modifiersField = Field.class.getDeclaredField("modifiers");

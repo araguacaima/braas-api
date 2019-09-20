@@ -3,6 +3,7 @@ package com.araguacaima.braas.api.routes;
 import com.araguacaima.braas.api.BeanBuilder;
 import com.araguacaima.braas.api.Server;
 import com.araguacaima.braas.api.common.Commons;
+import com.araguacaima.braas.api.jsonschema.CustomClassloaderJavaFileManager;
 import com.araguacaima.braas.api.jsonschema.PackageClass;
 import com.araguacaima.braas.api.jsonschema.RuleFactory;
 import com.araguacaima.braas.core.drools.DroolsConfig;
@@ -115,12 +116,18 @@ public class Api implements RouteGroup {
     private static NoopAnnotator noopAnnotator = new NoopAnnotator();
     private static SchemaStore schemaStore = new SchemaStore();
     private static SchemaGenerator schemaGenerator = new SchemaGenerator();
-    private static FileUtils fileUtils = new FileUtils();
+
+    static {
+        classLoaderUtils.init();
+        classLoaderUtils.setClassLoader(Api.class.getClassLoader());
+    }
     private ZipUtils zipUtils = new ZipUtils();
     private JarUtils jarUtils = new JarUtils();
     private static ClassLoaderUtils classLoaderUtils = new ClassLoaderUtils(null);
     private Collection<Option> with = ImmutableList.of(Option.FLATTENED_ENUMS, Option.SIMPLIFIED_ENUMS, Option.DEFINITIONS_FOR_ALL_OBJECTS);
     private Collection<Option> without = null;
+
+    private FileUtils fileUtils = new FileUtils();
 
     @Override
     public void addRoutes() {
@@ -280,27 +287,29 @@ public class Api implements RouteGroup {
         });
     }
 
-    private static void jsonToSourceClassFile(String json, String className, String packageName, File rootDirectory) throws IOException, NoSuchFieldException, IllegalAccessException {
+    private void jsonToSourceClassFile(String json, String className, String packageName, File rootDirectory) throws IOException, NoSuchFieldException, IllegalAccessException {
         JCodeModel codeModel = new JCodeModel();
         SchemaMapper mapper = new SchemaMapper(new RuleFactory(config, noopAnnotator, schemaStore, DEFINITIONS_ROOT), schemaGenerator);
         mapper.generate(codeModel, className, packageName, json);
         codeModel.build(rootDirectory);
     }
 
-    public static void compileSources(File javaSourcesFile, File outputDirectory) throws IOException {
+    public void compileSources(File javaSourcesFile, File outputDirectory) throws IOException, IllegalAccessException, NoSuchFieldException, ClassNotFoundException {
         File[] sourceFiles = org.apache.commons.io.FileUtils.listFiles(javaSourcesFile, new String[]{"java"}, true).toArray(new File[]{});
         JavaCompiler javaCompiler = ToolProvider.getSystemJavaCompiler();
         OutputStreamJavaFileManager<JavaFileManager> fileManager =
-                new OutputStreamJavaFileManager<>(
-                        javaCompiler.getStandardFileManager(null, null, null), outputDirectory);
+                new OutputStreamJavaFileManager<>(javaCompiler.getStandardFileManager(null, null, null), outputDirectory);
+        DiagnosticCollector<JavaFileObject> diagnostics = new DiagnosticCollector<>();
+        StandardJavaFileManager standardJavaFileManager = javaCompiler.getStandardFileManager(diagnostics, null, null);
+        final JavaFileManager fileManager1 = new CustomClassloaderJavaFileManager(classLoaderUtils.getClassLoader(), standardJavaFileManager, outputDirectory);
 
         List<JavaFileObject> fileObjects = new ArrayList<>();
         for (File file : sourceFiles) {
             fileObjects.add(new JavaSourceFromString(file.toURI(), FileUtils.readFileToString(file, Charset.forName("UTF-8"))));
         }
         List<String> options = Arrays.asList("-classpath", classLoaderUtils.getClasspath());
-        DiagnosticCollector<JavaFileObject> diagnostics = new DiagnosticCollector<>();
-        JavaCompiler.CompilationTask task = javaCompiler.getTask(null, fileManager, diagnostics, options, null, fileObjects);
+
+        JavaCompiler.CompilationTask task = javaCompiler.getTask(null, fileManager1, diagnostics, options, null, fileObjects);
         if (!task.call()) {
             StringBuilder errorMsg = new StringBuilder();
             for (Diagnostic d : diagnostics.getDiagnostics()) {
@@ -313,10 +322,15 @@ public class Api implements RouteGroup {
         }
         fileManager.close();
         fileManager.flush();
+        classLoaderUtils.addToClasspath(outputDirectory.getCanonicalPath());
 
         File[] compiledFiles = org.apache.commons.io.FileUtils.listFiles(outputDirectory, new String[]{"class"}, true).toArray(new File[]{});
         for (File file : compiledFiles) {
-            classLoaderUtils.addToClasspath(file.getCanonicalPath());
+            String path = file.getCanonicalPath();
+            String class_ = fileUtils.getRelativePathFrom(outputDirectory, file).substring(1);
+            class_ = class_.replaceAll("/", ".").replaceAll("\\\\", ".") + "." + file.getName().replace(".class", StringUtils.EMPTY);
+            classLoaderUtils.addResourceToDependencies(path);
+            classLoaderUtils.loadClass(class_);
         }
     }
 
@@ -494,20 +508,17 @@ public class Api implements RouteGroup {
         @Override
         public JavaFileObject getJavaFileForOutput(final JavaFileManager.Location location,
                                                    final String className, final JavaFileObject.Kind kind, final FileObject sibling) {
-            OutputStream outputStream = null;
+            OutputStream outputStream;
             try {
                 PackageClass packageClass = PackageClass.instance(className);
                 String package_ = packageClass.getPackageName();
                 String class_ = packageClass.getClassName();
-                if (!class_.contains("$")) {
-                    File outputFile = FileUtils.makeDirFromPackageName(outputDirectory, package_);
-                    outputFile = new File(outputFile, class_ + ".class");
-                    outputStream = new FileOutputStream(outputFile);
-                } else {
-                    outputStream = new ByteArrayOutputStream();
-                }
+                File outputFile = FileUtils.makeDirFromPackageName(outputDirectory, package_);
+                outputFile = new File(outputFile, class_ + ".class");
+                outputStream = new FileOutputStream(outputFile);
             } catch (IOException e) {
                 e.printStackTrace();
+                outputStream = new ByteArrayOutputStream();
             }
             return new OutputStreamSimpleFileObject(new File(className).toURI(), kind, outputStream);
         }

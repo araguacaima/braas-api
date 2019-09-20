@@ -3,17 +3,19 @@ package com.araguacaima.braas.api.routes;
 import com.araguacaima.braas.api.BeanBuilder;
 import com.araguacaima.braas.api.Server;
 import com.araguacaima.braas.api.common.Commons;
+import com.araguacaima.braas.api.jsonschema.CustomClassloaderJavaFileManager;
+import com.araguacaima.braas.api.jsonschema.PackageClass;
+import com.araguacaima.braas.api.jsonschema.RuleFactory;
 import com.araguacaima.braas.core.drools.DroolsConfig;
+import com.araguacaima.braas.core.drools.DroolsUtils;
 import com.araguacaima.commons.utils.*;
 import com.fasterxml.jackson.databind.exc.MismatchedInputException;
 import com.github.victools.jsonschema.generator.Option;
 import com.google.common.collect.ImmutableList;
 import com.sun.codemodel.JCodeModel;
-import com.sun.codemodel.writer.SingleStreamCodeWriter;
 import org.apache.commons.io.filefilter.SuffixFileFilter;
 import org.apache.commons.io.filefilter.TrueFileFilter;
 import org.jsonschema2pojo.*;
-import org.jsonschema2pojo.rules.RuleFactory;
 import org.pac4j.sparkjava.SparkWebContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -21,10 +23,7 @@ import spark.RouteGroup;
 
 import javax.servlet.http.Part;
 import javax.tools.*;
-import java.io.ByteArrayOutputStream;
-import java.io.File;
-import java.io.IOException;
-import java.io.OutputStream;
+import java.io.*;
 import java.net.URI;
 import java.nio.charset.Charset;
 import java.nio.file.Files;
@@ -54,6 +53,7 @@ public class Api implements RouteGroup {
     public static final String ZIP_MIME = "application/zip";
     public static final String CLASS_SUFFIX = "class";
     public static final String JSON_SUFFIX = "json";
+    public static final String DEFINITIONS_ROOT = "definitions";
     private static Logger log = LoggerFactory.getLogger(Api.class);
     private static GenerationConfig config = new DefaultGenerationConfig() {
 
@@ -113,12 +113,16 @@ public class Api implements RouteGroup {
         }
 
     };
+    private static NoopAnnotator noopAnnotator = new NoopAnnotator();
+    private static SchemaStore schemaStore = new SchemaStore();
+    private static SchemaGenerator schemaGenerator = new SchemaGenerator();
+
     private ZipUtils zipUtils = new ZipUtils();
     private JarUtils jarUtils = new JarUtils();
-    private static FileUtils fileUtils = new FileUtils();
-    private static ClassLoaderUtils classLoaderUtils = new ClassLoaderUtils(null);
+    private static ClassLoaderUtils classLoaderUtils = new ClassLoaderUtils(Api.class.getClassLoader());
     private Collection<Option> with = ImmutableList.of(Option.FLATTENED_ENUMS, Option.SIMPLIFIED_ENUMS, Option.DEFINITIONS_FOR_ALL_OBJECTS);
     private Collection<Option> without = null;
+    private FileUtils fileUtils = new FileUtils();
 
     @Override
     public void addRoutes() {
@@ -265,68 +269,63 @@ public class Api implements RouteGroup {
             }
             return EMPTY_RESPONSE;
         });
+        post(ASSETS, (request, response) -> {
+            final SparkWebContext ctx = new SparkWebContext(request, response);
+            DroolsConfig droolsConfig = (DroolsConfig) ctx.getSessionAttribute("drools-config");
+            DroolsUtils droolsUtils = new DroolsUtils(droolsConfig);
+            String assetsStr = request.body();
+            Map assets = jsonUtils.fromJSON(assetsStr, Map.class);
+            Collection results = droolsUtils.executeRules(assets);
+            response.status(HTTP_ACCEPTED);
+            response.type(JSON_CONTENT_TYPE);
+            return jsonUtils.toJSON(results);
+        });
     }
 
-    private void processFile(File file, String packageName, File sourceFilesDirectory, File compiledFilesDirectory) throws IOException, ClassNotFoundException, NoSuchFieldException, IllegalAccessException {
-        String json = FileUtils.readFileToString(file, Charset.forName("UTF-8"));
-        try {
-            Map<String, String> jsonSchema = jsonUtils.fromJSON(json, Map.class);
-            String id = jsonSchema.get("$id");
-            jsonToClass(json, id, packageName, sourceFilesDirectory);
-        } catch (MismatchedInputException ignored) {
-            Collection<Map<String, Object>> jsonSchemas = jsonUtils.fromJSON(json, Collection.class);
-            Set<String> ids = new LinkedHashSet<>();
-            LinkedHashMap<String, LinkedHashMap> definitionMap = new LinkedHashMap<>();
-            jsonSchemas.forEach(jsonSchema -> {
-                try {
-                    String id = jsonSchema.get("$id").toString();
-                    String className_;
-                    String packageName_;
-                    if (id.contains(".")) {
-                        className_ = id.substring(id.lastIndexOf('.') + 1);
-                        packageName_ = id.substring(0, id.lastIndexOf('.'));
-                    } else {
-                        className_ = id;
-                        packageName_ = packageName;
-                    }
-                    LinkedHashMap<String, LinkedHashMap> map_ = createKeysFromPackageName(packageName_, definitionMap);
-                    Map innerMap = getLastValueFromPackageName(packageName_, map_);
-                    innerMap.put(className_, jsonSchema);
-                    jsonSchema.put("$id", id);
-                    jsonSchema.put("$schema", "http://json-schema.org/draft-07/schema#");
-                    ids.add(id);
-                    definitionMap.putAll(map_);
-                } catch (Throwable t) {
-                    t.printStackTrace();
-                }
-            });
-            definitionsToClasses(definitionMap, ids, sourceFilesDirectory);
+    private void jsonToSourceClassFile(String json, String className, String packageName, File rootDirectory) throws IOException, NoSuchFieldException, IllegalAccessException {
+        JCodeModel codeModel = new JCodeModel();
+        SchemaMapper mapper = new SchemaMapper(new RuleFactory(config, noopAnnotator, schemaStore, DEFINITIONS_ROOT), schemaGenerator);
+        mapper.generate(codeModel, className, packageName, json);
+        codeModel.build(rootDirectory);
+    }
+
+    public void compileSources(File javaSourcesFile, File outputDirectory) throws IOException, IllegalAccessException, NoSuchFieldException, ClassNotFoundException {
+        File[] sourceFiles = org.apache.commons.io.FileUtils.listFiles(javaSourcesFile, new String[]{"java"}, true).toArray(new File[]{});
+        JavaCompiler javaCompiler = ToolProvider.getSystemJavaCompiler();
+        OutputStreamJavaFileManager<JavaFileManager> fileManager =
+                new OutputStreamJavaFileManager<>(javaCompiler.getStandardFileManager(null, null, null), outputDirectory);
+        DiagnosticCollector<JavaFileObject> diagnostics = new DiagnosticCollector<>();
+        StandardJavaFileManager standardJavaFileManager = javaCompiler.getStandardFileManager(diagnostics, null, null);
+        final JavaFileManager fileManager1 = new CustomClassloaderJavaFileManager(classLoaderUtils.getClassLoader(), standardJavaFileManager, outputDirectory);
+
+        List<JavaFileObject> fileObjects = new ArrayList<>();
+        for (File file : sourceFiles) {
+            fileObjects.add(new JavaSourceFromString(file.toURI(), FileUtils.readFileToString(file, Charset.forName("UTF-8"))));
         }
-        compileSources(sourceFilesDirectory, compiledFilesDirectory);
-    }
+        List<String> options = Arrays.asList("-classpath", classLoaderUtils.getClasspath());
 
-    private void definitionsToClasses(LinkedHashMap<String, LinkedHashMap> definitions, Set<String> ids, File rootDirectory) throws IOException {
-        for (String id : ids) {
-            Map map = getLastValueFromPackageName(id, definitions);
-            String className;
-            String packageName;
-            if (id.contains(".")) {
-                className = id.substring(id.lastIndexOf('.') + 1);
-                packageName = id.substring(0, id.lastIndexOf('.'));
-            } else {
-                className = id;
-                packageName = StringUtils.EMPTY;
+        JavaCompiler.CompilationTask task = javaCompiler.getTask(null, fileManager1, diagnostics, options, null, fileObjects);
+        if (!task.call()) {
+            StringBuilder errorMsg = new StringBuilder();
+            for (Diagnostic d : diagnostics.getDiagnostics()) {
+                String err = String.format("Compilation error: Line %d - %s%n", d.getLineNumber(),
+                        d.getMessage(null));
+                errorMsg.append(err);
+                System.err.print(err);
             }
-            jsonToClass(jsonUtils.toJSON(map), StringUtils.capitalize(className), packageName, rootDirectory);
+            throw new IOException(errorMsg.toString());
         }
-    }
+        fileManager.close();
+        fileManager.flush();
+        classLoaderUtils.addToClasspath(outputDirectory.getCanonicalPath());
 
-    private static void jsonToClass(String json, String className, String packageName, File rootDirectory) throws IOException {
-        if (!className.contains("$")) {
-            JCodeModel codeModel = new JCodeModel();
-            SchemaMapper mapper = new SchemaMapper(new RuleFactory(config, new NoopAnnotator(), new SchemaStore()), new SchemaGenerator());
-            mapper.generate(codeModel, className, packageName, json);
-            codeModel.build(rootDirectory);
+        File[] compiledFiles = org.apache.commons.io.FileUtils.listFiles(outputDirectory, new String[]{"class"}, true).toArray(new File[]{});
+        for (File file : compiledFiles) {
+            String path = file.getCanonicalPath();
+            String class_ = fileUtils.getRelativePathFrom(outputDirectory, file).substring(1);
+            class_ = class_.replaceAll("/", ".").replaceAll("\\\\", ".") + "." + file.getName().replace(".class", StringUtils.EMPTY);
+            classLoaderUtils.addResourceToDependencies(path);
+            classLoaderUtils.loadClass(class_);
         }
     }
 
@@ -339,7 +338,7 @@ public class Api implements RouteGroup {
         if (map == null) {
             return null;
         } else {
-            String remaining = key.replaceFirst(entry, StringUtils.EMPTY);
+            String remaining = key.substring(entry.length());
             if (remaining.startsWith(".")) {
                 remaining = remaining.substring(1);
             }
@@ -381,48 +380,100 @@ public class Api implements RouteGroup {
         return map;
     }
 
-    public static String jsonToString(String json, String className, String packageName) throws IOException {
-        if (!className.contains("$")) {
-            JCodeModel codeModel = new JCodeModel();
-            SchemaMapper mapper = new SchemaMapper(new RuleFactory(config, new NoopAnnotator(), new SchemaStore()), new SchemaGenerator());
-            mapper.generate(codeModel, className, packageName, json);
+    private void processFile(File file, String packageName, File sourceFilesDirectory, File compiledFilesDirectory) throws IOException, ClassNotFoundException, NoSuchFieldException, IllegalAccessException {
+        String json = FileUtils.readFileToString(file, Charset.forName("UTF-8"));
+        try {
+            Map<String, String> jsonSchema = jsonUtils.fromJSON(json, Map.class);
+            String id = jsonSchema.get("$id");
+            jsonToSourceClassFile(json, id, packageName, sourceFilesDirectory);
+        } catch (MismatchedInputException ignored) {
+            Collection<Map<String, Object>> jsonSchemas = jsonUtils.fromJSON(json, Collection.class);
+            Set<String> ids = new LinkedHashSet<>();
+            LinkedHashMap<String, LinkedHashMap> definitionMap = new LinkedHashMap<>();
+            jsonSchemas.forEach(jsonSchema -> {
+                try {
+                    String id = jsonSchema.get("$id").toString();
+                    String className_;
+                    String packageName_;
+                    if (id.contains(".")) {
+                        className_ = id.substring(id.lastIndexOf('.') + 1);
+                        packageName_ = id.substring(0, id.lastIndexOf('.'));
+                    } else {
+                        className_ = id;
+                        packageName_ = packageName;
+                    }
+                    LinkedHashMap<String, LinkedHashMap> map_ = createKeysFromPackageName(packageName_, definitionMap);
+                    Map innerMap = getLastValueFromPackageName(packageName_, map_);
+                    innerMap.put(className_, jsonSchema);
+                    jsonSchema.put("$id", id);
+                    jsonSchema.put("$schema", "http://json-schema.org/draft-07/schema#");
+                    ids.add(id);
+                    definitionMap.putAll(map_);
 
-            ByteArrayOutputStream buff = new ByteArrayOutputStream();
-            codeModel.build((new SingleStreamCodeWriter(buff)));
-            return buff.toString(Charset.forName("UTF-8").name());
+                    //fixing $ref properties
+                    LinkedHashMap properties = (LinkedHashMap) jsonSchema.get("properties");
+                    if (MapUtils.isNotEmpty(properties)) {
+                        for (Object key : properties.keySet()) {
+                            LinkedHashMap value = (LinkedHashMap) properties.get(key);
+                            String innerId = (String) value.get("$id");
+                            if (StringUtils.isNotBlank(innerId) && innerId.contains(".")) {
+                                value.clear();
+                                value.put("$ref", "#/definitions/" + innerId.replaceAll("\\.", "/"));
+                                LinkedHashMap definitions = (LinkedHashMap) jsonSchema.get(DEFINITIONS_ROOT);
+                                if (definitions == null) {
+                                    definitions = new LinkedHashMap();
+                                    jsonSchema.put(DEFINITIONS_ROOT, definitions);
+                                }
+                                definitions.put(innerId, "");
+                            }
+                        }
+                    }
+                } catch (Throwable t) {
+                    t.printStackTrace();
+                }
+            });
+            definitionsToClasses(definitionMap, ids, sourceFilesDirectory);
         }
-        return null;
+        compileSources(sourceFilesDirectory, compiledFilesDirectory);
     }
 
-    public static void compileSources(File javaSourcesFile, File outputDirectory) throws IOException {
-        ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
-        File[] sourceFiles = org.apache.commons.io.FileUtils.listFiles(javaSourcesFile, new String[]{"java"}, true).toArray(new File[]{});
-        JavaCompiler javaCompiler = ToolProvider.getSystemJavaCompiler();
-        OutputStreamJavaFileManager<JavaFileManager> fileManager =
-                new OutputStreamJavaFileManager<>(
-                        javaCompiler.getStandardFileManager(null, null, null), byteArrayOutputStream);
-
-        List<JavaFileObject> fileObjects = new ArrayList<>();
-        for (File file : sourceFiles) {
-            if (!file.getName().contains("$")) {
-                fileObjects.add(new JavaSourceFromString(file.toURI(), FileUtils.readFileToString(file, Charset.forName("UTF-8"))));
+    private void definitionsToClasses(LinkedHashMap<String, LinkedHashMap> definitions, Set<String> ids, File rootDirectory) throws IOException, NoSuchFieldException, IllegalAccessException {
+        FileUtils.cleanDirectory(rootDirectory);
+        for (String id : ids) {
+            Map map = getLastValueFromPackageName(id, definitions);
+            if (map != null) {
+                PackageClass packageClass = new PackageClass(id).invoke();
+                String className = packageClass.getClassName();
+                String packageName = packageClass.getPackageName();
+                LinkedHashMap result = new LinkedHashMap();
+                LinkedHashMap map1 = (LinkedHashMap) map.get(DEFINITIONS_ROOT);
+                if (map1 != null) {
+                    for (Object keyObj : map1.keySet()) {
+                        String key = keyObj.toString();
+                        Map value = getLastValueFromPackageName(key, definitions);
+                        if (value != null) {
+                            packageClass = new PackageClass(key).invoke();
+                            String className_ = packageClass.getClassName();
+                            String packageName_ = packageClass.getPackageName();
+                            LinkedHashMap<String, LinkedHashMap> map_ = createKeysFromPackageName(packageName_, result);
+                            value.remove("$id");
+                            value.remove("$schema");
+                            value.remove(DEFINITIONS_ROOT);
+                            Map value_ = getLastValueFromPackageName(key, map_);
+                            if (value_ == null) {
+                                value_ = getLastValueFromPackageName(packageName_, map_);
+                                value_.put(className_, value);
+                            } else {
+                                value_.putAll(value);
+                            }
+                            result.putAll(map_);
+                        }
+                    }
+                }
+                map.put(DEFINITIONS_ROOT, result);
+                jsonToSourceClassFile(jsonUtils.toJSON(map), StringUtils.capitalize(className), packageName, rootDirectory);
             }
         }
-        List<String> options = Arrays.asList("-classpath", classLoaderUtils.getClasspath(), "-d", outputDirectory.getCanonicalPath());
-        DiagnosticCollector<JavaFileObject> diagnostics = new DiagnosticCollector<>();
-        JavaCompiler.CompilationTask task = javaCompiler.getTask(null, fileManager, diagnostics, options, null, fileObjects);
-        if (!task.call()) {
-            StringBuilder errorMsg = new StringBuilder();
-            for (Diagnostic d : diagnostics.getDiagnostics()) {
-                String err = String.format("Compilation error: Line %d - %s%n", d.getLineNumber(),
-                        d.getMessage(null));
-                errorMsg.append(err);
-                System.err.print(err);
-            }
-            throw new IOException(errorMsg.toString());
-        }
-        fileManager.close();
-        fileManager.flush();
     }
 
     private static class OutputStreamSimpleFileObject extends SimpleJavaFileObject {
@@ -442,16 +493,28 @@ public class Api implements RouteGroup {
 
     private static class OutputStreamJavaFileManager<M extends JavaFileManager>
             extends ForwardingJavaFileManager<M> {
-        private OutputStream outputStream;
+        private File outputDirectory;
 
-        protected OutputStreamJavaFileManager(final M fileManager, final OutputStream outputStream) {
+        protected OutputStreamJavaFileManager(final M fileManager, final File outputDirectory) {
             super(fileManager);
-            this.outputStream = outputStream;
+            this.outputDirectory = outputDirectory;
         }
 
         @Override
         public JavaFileObject getJavaFileForOutput(final JavaFileManager.Location location,
                                                    final String className, final JavaFileObject.Kind kind, final FileObject sibling) {
+            OutputStream outputStream;
+            try {
+                PackageClass packageClass = PackageClass.instance(className);
+                String package_ = packageClass.getPackageName();
+                String class_ = packageClass.getClassName();
+                File outputFile = FileUtils.makeDirFromPackageName(outputDirectory, package_);
+                outputFile = new File(outputFile, class_ + ".class");
+                outputStream = new FileOutputStream(outputFile);
+            } catch (IOException e) {
+                e.printStackTrace();
+                outputStream = new ByteArrayOutputStream();
+            }
             return new OutputStreamSimpleFileObject(new File(className).toURI(), kind, outputStream);
         }
     }

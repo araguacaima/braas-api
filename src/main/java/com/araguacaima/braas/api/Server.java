@@ -102,25 +102,47 @@ public class Server {
         before((request, response) -> {
             String sessionId;
             final SparkWebContext ctx = new SparkWebContext(request, response);
-            sessionId = (String) ctx.getSessionAttribute(SESSION_ID_PARAM);
+            String storedSessionId = (String) ctx.getSessionAttribute(SESSION_ID_PARAM);
+            sessionId = storedSessionId;
+
+            if (StringUtils.isBlank(sessionId)) {
+                sessionId = request.cookie("braas-session-id");
+                if (StringUtils.isBlank(sessionId)) {
+                    sessionId = UUID.randomUUID().toString();
+                    response.cookie("braas-session-id", sessionId, 86400, true);
+                }
+            }
+
             if (StringUtils.isBlank(sessionId)) {
                 sessionId = UUID.randomUUID().toString();
-                File tempDir = FileUtils.createTempDir(sessionId);
-                tempDir.deleteOnExit();
+            }
+            File tempDir = null;
+            if (StringUtils.isNotBlank(storedSessionId)) {
+                File baseDir = new File(System.getProperty("java.io.tmpdir"));
+                tempDir = new File(baseDir, sessionId);
+            }
+
+            if (StringUtils.isBlank(storedSessionId) || tempDir == null) {
+                File baseDir = new File(System.getProperty("java.io.tmpdir"));
+                tempDir = new File(baseDir, sessionId);
+                if (!tempDir.exists()) {
+                    tempDir = FileUtils.createTempDir(sessionId);
+                }
+                //tempDir.deleteOnExit();
                 File uploadPath = new File(tempDir, UPLOAD_DIR);
                 uploadPath.mkdir();
-                uploadPath.deleteOnExit();
+                //uploadPath.deleteOnExit();
                 File rulesPath = new File(tempDir, RULES_DIR);
                 rulesPath.mkdir();
-                rulesPath.deleteOnExit();
+                //rulesPath.deleteOnExit();
                 File sourceClassesPath = new File(tempDir, SOURCE_CLASSES_DIR);
                 sourceClassesPath.mkdir();
-                sourceClassesPath.deleteOnExit();
+                //sourceClassesPath.deleteOnExit();
                 sourceClassesPath.setReadable(true);
                 sourceClassesPath.setWritable(true);
                 File compiledClassesPath = new File(tempDir, COMPILED_CLASSES_DIR);
                 compiledClassesPath.mkdir();
-                compiledClassesPath.deleteOnExit();
+                //compiledClassesPath.deleteOnExit();
                 compiledClassesPath.setReadable(true);
                 compiledClassesPath.setWritable(true);
                 ctx.setSessionAttribute(UPLOAD_DIR_PARAM, uploadPath);

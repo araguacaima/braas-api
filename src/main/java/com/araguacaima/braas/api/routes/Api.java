@@ -122,6 +122,7 @@ public class Api implements RouteGroup {
     private static ClassLoaderUtils classLoaderUtils = new ClassLoaderUtils(Api.class.getClassLoader());
     private Collection<Option> with = ImmutableList.of(Option.FLATTENED_ENUMS, Option.SIMPLIFIED_ENUMS, Option.DEFINITIONS_FOR_ALL_OBJECTS);
     private Collection<Option> without = null;
+
     private FileUtils fileUtils = new FileUtils();
 
     @Override

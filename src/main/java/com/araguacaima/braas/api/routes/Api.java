@@ -299,7 +299,7 @@ public class Api implements RouteGroup {
         for (File file : sourceFiles) {
             String fullyQualifiedFileName = fileUtils.getRelativePathFrom(javaSourcesFile, file);
             fullyQualifiedFileName = fullyQualifiedFileName.replaceAll("\\\\", ".").replaceAll("/", ".")
-                    + "." + file.getName().replace(".java", StringUtils.EMPTY);
+                    + "." + file.getName().replace(".java", StringUtils.EMPTY).substring(1);
             Class class_ = Compiler.compile(fullyQualifiedFileName, FileUtils.readFileToString(file, Charset.forName("UTF-8")));
             classLoaderUtils.loadClass(class_);
         }

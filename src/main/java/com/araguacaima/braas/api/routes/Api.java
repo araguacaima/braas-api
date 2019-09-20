@@ -117,16 +117,11 @@ public class Api implements RouteGroup {
     private static SchemaStore schemaStore = new SchemaStore();
     private static SchemaGenerator schemaGenerator = new SchemaGenerator();
 
-    static {
-        classLoaderUtils.init();
-        classLoaderUtils.setClassLoader(Api.class.getClassLoader());
-    }
     private ZipUtils zipUtils = new ZipUtils();
     private JarUtils jarUtils = new JarUtils();
-    private static ClassLoaderUtils classLoaderUtils = new ClassLoaderUtils(null);
+    private static ClassLoaderUtils classLoaderUtils = new ClassLoaderUtils(Api.class.getClassLoader());
     private Collection<Option> with = ImmutableList.of(Option.FLATTENED_ENUMS, Option.SIMPLIFIED_ENUMS, Option.DEFINITIONS_FOR_ALL_OBJECTS);
     private Collection<Option> without = null;
-
     private FileUtils fileUtils = new FileUtils();
 
     @Override

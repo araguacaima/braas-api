@@ -125,6 +125,10 @@ public class Api implements RouteGroup {
 
     private FileUtils fileUtils = new FileUtils();
 
+    static {
+        classLoaderUtils.init();
+    }
+
     @Override
     public void addRoutes() {
         //before(Commons.EMPTY_PATH, Commons.genericFilter);

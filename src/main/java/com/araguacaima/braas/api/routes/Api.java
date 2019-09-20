@@ -326,10 +326,11 @@ public class Api implements RouteGroup {
         String path1 = outputDirectory.getCanonicalPath();
         File jarFile = new File(outputDirectory.getParentFile(), jarName);
         jarFile.delete();
-        jarUtils.generateJarFromDirectory(path1, jarFile.getCanonicalPath());
+        jarUtils.generateJarFromDirectory(outputDirectory, jarFile);
         classLoaderUtils.addFile(jarFile);
         classLoaderUtils.addToClasspath(path1);
         classLoaderUtils.addResourceToDependencies(jarFile.getCanonicalPath());
+        classLoaderUtils.loadClassesInsideJar(jarFile);
         File[] compiledFiles = org.apache.commons.io.FileUtils.listFiles(outputDirectory, new String[]{"class"}, true).toArray(new File[]{});
         for (File file : compiledFiles) {
             String path = file.getCanonicalPath();

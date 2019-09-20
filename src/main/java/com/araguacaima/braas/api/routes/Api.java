@@ -294,19 +294,21 @@ public class Api implements RouteGroup {
         codeModel.build(rootDirectory);
     }
 
-    public void compileSources2(File javaSourcesFile) throws IOException, ClassNotFoundException {
+    public void compileSources(File javaSourcesFile) throws IOException, ClassNotFoundException {
+        classLoaderUtils.addToClasspath(javaSourcesFile.getCanonicalPath());
+        Compiler compiler = new Compiler(classLoaderUtils.getClasspath());
         File[] sourceFiles = org.apache.commons.io.FileUtils.listFiles(javaSourcesFile, new String[]{"java"}, true).toArray(new File[]{});
         for (File file : sourceFiles) {
-            String fullyQualifiedFileName = fileUtils.getRelativePathFrom(javaSourcesFile, file);
+            String fullyQualifiedFileName = fileUtils.getRelativePathFrom(javaSourcesFile, file).substring(1);
             fullyQualifiedFileName = fullyQualifiedFileName.replaceAll("\\\\", ".").replaceAll("/", ".")
-                    + "." + file.getName().replace(".java", StringUtils.EMPTY).substring(1);
-            Class class_ = Compiler.compile(fullyQualifiedFileName, FileUtils.readFileToString(file, Charset.forName("UTF-8")));
+                    + "." + file.getName().replace(".java", StringUtils.EMPTY);
+            Class class_ = compiler.compile(fullyQualifiedFileName, FileUtils.readFileToString(file, Charset.forName("UTF-8")));
             classLoaderUtils.loadClass(class_);
         }
     }
 
 /*
-    public void compileSources(File javaSourcesFile, File outputDirectory, String jarName) throws IOException, IllegalAccessException, NoSuchFieldException, ClassNotFoundException {
+    public void compileSources2(File javaSourcesFile, File outputDirectory, String jarName) throws IOException, IllegalAccessException, NoSuchFieldException, ClassNotFoundException {
         File[] sourceFiles = org.apache.commons.io.FileUtils.listFiles(javaSourcesFile, new String[]{"java"}, true).toArray(new File[]{});
         JavaCompiler javaCompiler = ToolProvider.getSystemJavaCompiler();
         DiagnosticCollector<JavaFileObject> diagnostics = new DiagnosticCollector<>();
@@ -462,7 +464,7 @@ public class Api implements RouteGroup {
             });
             definitionsToClasses(definitionMap, ids, sourceFilesDirectory);
         }
-        compileSources2(sourceFilesDirectory);
+        compileSources(sourceFilesDirectory);
         //compileSources(sourceFilesDirectory, compiledFilesDirectory, jarName);
     }
 

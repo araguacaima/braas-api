@@ -7,10 +7,18 @@ import javax.tools.ToolProvider;
 import java.lang.invoke.MethodHandles;
 import java.lang.invoke.MethodHandles.Lookup;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 public class Compiler {
-    public static Class<?> compile(String className, String content) {
+
+    private final String classpath;
+
+    public Compiler(String classpath) {
+        this.classpath = classpath;
+    }
+
+    public Class<?> compile(String className, String content) {
         Lookup lookup = MethodHandles.lookup();
         // If we have already compiled our class, simply load it
         try {
@@ -22,13 +30,14 @@ public class Compiler {
         }
     }
 
-    private static Class<?> compile0(String className, String content, Lookup lookup) {
+    private Class<?> compile0(String className, String content, Lookup lookup) {
         JavaCompiler compiler =
                 ToolProvider.getSystemJavaCompiler();
         ClassFileManager manager = new ClassFileManager(
                 compiler.getStandardFileManager(null, null, null));
         List<CharSequenceJavaFileObject> files = new ArrayList<>();
         files.add(new CharSequenceJavaFileObject(className, content));
+        List<String> options = Arrays.asList("-classpath", classpath);
         compiler.getTask(null, manager, null, null, null, files).call();
         Class<?> result;
         // Implement a check whether we're on JDK 8. If so, use

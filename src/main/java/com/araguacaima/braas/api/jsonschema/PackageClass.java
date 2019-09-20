@@ -14,6 +14,10 @@ public class PackageClass {
         }
     }
 
+    public static PackageClass instance(String id) {
+        return new PackageClass(id).invoke();
+    }
+
     public String getClassName() {
         return className;
     }
@@ -31,9 +35,5 @@ public class PackageClass {
             packageName = StringUtils.EMPTY;
         }
         return this;
-    }
-
-    public static PackageClass instance(String id) {
-        return new PackageClass(id).invoke();
     }
 }

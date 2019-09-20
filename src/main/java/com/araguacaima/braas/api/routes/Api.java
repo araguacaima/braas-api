@@ -3,8 +3,7 @@ package com.araguacaima.braas.api.routes;
 import com.araguacaima.braas.api.BeanBuilder;
 import com.araguacaima.braas.api.Server;
 import com.araguacaima.braas.api.common.Commons;
-import com.araguacaima.braas.api.jsonschema.JavaSourceFromString;
-import com.araguacaima.braas.api.jsonschema.OutputStreamJavaFileManager;
+import com.araguacaima.braas.api.jsonschema.Compiler;
 import com.araguacaima.braas.api.jsonschema.PackageClass;
 import com.araguacaima.braas.api.jsonschema.RuleFactory;
 import com.araguacaima.braas.core.drools.DroolsConfig;
@@ -23,7 +22,6 @@ import org.slf4j.LoggerFactory;
 import spark.RouteGroup;
 
 import javax.servlet.http.Part;
-import javax.tools.*;
 import java.io.File;
 import java.io.IOException;
 import java.nio.charset.Charset;
@@ -296,13 +294,25 @@ public class Api implements RouteGroup {
         codeModel.build(rootDirectory);
     }
 
+    public void compileSources2(File javaSourcesFile) throws IOException, ClassNotFoundException {
+        File[] sourceFiles = org.apache.commons.io.FileUtils.listFiles(javaSourcesFile, new String[]{"java"}, true).toArray(new File[]{});
+        for (File file : sourceFiles) {
+            String fullyQualifiedFileName = fileUtils.getRelativePathFrom(javaSourcesFile, file);
+            fullyQualifiedFileName = fullyQualifiedFileName.replaceAll("\\\\", ".").replaceAll("/", ".")
+                    + "." + file.getName().replace(".java", StringUtils.EMPTY);
+            Class class_ = Compiler.compile(fullyQualifiedFileName, FileUtils.readFileToString(file, Charset.forName("UTF-8")));
+            classLoaderUtils.loadClass(class_);
+        }
+    }
+
+/*
     public void compileSources(File javaSourcesFile, File outputDirectory, String jarName) throws IOException, IllegalAccessException, NoSuchFieldException, ClassNotFoundException {
         File[] sourceFiles = org.apache.commons.io.FileUtils.listFiles(javaSourcesFile, new String[]{"java"}, true).toArray(new File[]{});
         JavaCompiler javaCompiler = ToolProvider.getSystemJavaCompiler();
         DiagnosticCollector<JavaFileObject> diagnostics = new DiagnosticCollector<>();
-        OutputStreamJavaFileManager<JavaFileManager> fileManager = new OutputStreamJavaFileManager<>(javaCompiler.getStandardFileManager(null, null, null), outputDirectory);
-        //StandardJavaFileManager standardJavaFileManager = javaCompiler.getStandardFileManager(diagnostics, null, null);
-        //JavaFileManager fileManager = new CustomClassloaderJavaFileManager(classLoaderUtils.getClassLoader(), standardJavaFileManager, outputDirectory);
+        //OutputStreamJavaFileManager<JavaFileManager> fileManager = new OutputStreamJavaFileManager<>(javaCompiler.getStandardFileManager(null, null, null), outputDirectory);
+        StandardJavaFileManager standardJavaFileManager = javaCompiler.getStandardFileManager(diagnostics, null, null);
+        JavaFileManager fileManager = new CustomClassloaderJavaFileManager<>(classLoaderUtils.getClassLoader(), standardJavaFileManager, outputDirectory);
 
         List<JavaFileObject> fileObjects = new ArrayList<>();
         for (File file : sourceFiles) {
@@ -325,7 +335,12 @@ public class Api implements RouteGroup {
         fileManager.flush();
         String path1 = outputDirectory.getCanonicalPath();
         File jarFile = new File(outputDirectory.getParentFile(), jarName);
-        jarFile.delete();
+        if (jarFile.exists()) {
+            try {
+                FileUtils.forceDelete(jarFile);
+            } catch (Throwable ignored) {
+            }
+        }
         jarUtils.generateJarFromDirectory(outputDirectory, jarFile);
         classLoaderUtils.addFile(jarFile);
         classLoaderUtils.addToClasspath(path1);
@@ -340,6 +355,7 @@ public class Api implements RouteGroup {
             classLoaderUtils.loadClass(class_);
         }
     }
+*/
 
     private Map getLastValueFromPackageName(String key, Map parentMap) {
         if (StringUtils.isBlank(key)) {
@@ -446,7 +462,8 @@ public class Api implements RouteGroup {
             });
             definitionsToClasses(definitionMap, ids, sourceFilesDirectory);
         }
-        compileSources(sourceFilesDirectory, compiledFilesDirectory, jarName);
+        compileSources2(sourceFilesDirectory);
+        //compileSources(sourceFilesDirectory, compiledFilesDirectory, jarName);
     }
 
     private void definitionsToClasses(LinkedHashMap<String, LinkedHashMap> definitions, Set<String> ids, File rootDirectory) throws IOException, NoSuchFieldException, IllegalAccessException {

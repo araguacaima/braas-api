@@ -6,19 +6,19 @@ import javax.tools.*;
 import java.io.*;
 import java.net.URI;
 import java.util.Collections;
-import java.util.Iterator;
 import java.util.Set;
 
-public class CustomClassloaderJavaFileManager implements JavaFileManager {
+public class CustomClassloaderJavaFileManager<M extends JavaFileManager> extends ForwardingJavaFileManager<M> {
     private final ClassLoader classLoader;
-    private final StandardJavaFileManager standardFileManager;
+    private final M standardFileManager;
     private final PackageInternalsFinder finder;
     private final File outputDirectory;
 
 
-    public CustomClassloaderJavaFileManager(ClassLoader classLoader, StandardJavaFileManager standardFileManager, File outputDirectory) {
+    public CustomClassloaderJavaFileManager(ClassLoader classLoader, final M fileManager, File outputDirectory) {
+        super(fileManager);
         this.classLoader = classLoader;
-        this.standardFileManager = standardFileManager;
+        this.standardFileManager = fileManager;
         finder = new PackageInternalsFinder(classLoader);
         this.outputDirectory = outputDirectory;
     }
@@ -38,23 +38,8 @@ public class CustomClassloaderJavaFileManager implements JavaFileManager {
     }
 
     @Override
-    public boolean isSameFile(FileObject a, FileObject b) {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public boolean handleOption(String current, Iterator<String> remaining) {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
     public boolean hasLocation(Location location) {
         return location == StandardLocation.CLASS_PATH || location == StandardLocation.PLATFORM_CLASS_PATH; // we don't care about source and other location types - not needed for compilation
-    }
-
-    @Override
-    public JavaFileObject getJavaFileForInput(Location location, String className, JavaFileObject.Kind kind) throws IOException {
-        throw new UnsupportedOperationException();
     }
 
     @Override
@@ -77,26 +62,6 @@ public class CustomClassloaderJavaFileManager implements JavaFileManager {
     }
 
     @Override
-    public FileObject getFileForInput(Location location, String packageName, String relativeName) throws IOException {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public FileObject getFileForOutput(Location location, String packageName, String relativeName, FileObject sibling) throws IOException {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public void flush() throws IOException {
-        // do nothing
-    }
-
-    @Override
-    public void close() throws IOException {
-        // do nothing
-    }
-
-    @Override
     public Iterable<JavaFileObject> list(Location location, String packageName, Set<JavaFileObject.Kind> kinds, boolean recurse) throws IOException {
         if (location == StandardLocation.PLATFORM_CLASS_PATH) { // let standard manager hanfle
             return standardFileManager.list(location, packageName, kinds, recurse);
@@ -109,11 +74,6 @@ public class CustomClassloaderJavaFileManager implements JavaFileManager {
         }
         return Collections.emptyList();
 
-    }
-
-    @Override
-    public int isSupportedOption(String option) {
-        return -1;
     }
 
 }

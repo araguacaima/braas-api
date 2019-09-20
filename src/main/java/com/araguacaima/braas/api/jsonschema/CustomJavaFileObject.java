@@ -1,19 +1,20 @@
 package com.araguacaima.braas.api.jsonschema;
 
-import javax.lang.model.element.Modifier;
-import javax.lang.model.element.NestingKind;
-import javax.tools.JavaFileObject;
-import java.io.*;
+import javax.tools.SimpleJavaFileObject;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
 import java.net.URI;
 
 
-public class CustomJavaFileObject implements JavaFileObject {
+public class CustomJavaFileObject extends SimpleJavaFileObject {
     private final String binaryName;
     private final URI uri;
     private final String name;
     private OutputStream outputStream;
 
     public CustomJavaFileObject(String binaryName, URI uri, OutputStream outputStream) {
+        super(uri, Kind.CLASS);
         this.uri = uri;
         this.binaryName = binaryName;
         name = uri.getPath() == null ? uri.getSchemeSpecificPart() : uri.getPath();
@@ -41,28 +42,8 @@ public class CustomJavaFileObject implements JavaFileObject {
     }
 
     @Override
-    public Reader openReader(boolean ignoreEncodingErrors) throws IOException {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public CharSequence getCharContent(boolean ignoreEncodingErrors) throws IOException {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public Writer openWriter() throws IOException {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
     public long getLastModified() {
         return 0;
-    }
-
-    @Override
-    public boolean delete() {
-        throw new UnsupportedOperationException();
     }
 
     @Override
@@ -78,17 +59,7 @@ public class CustomJavaFileObject implements JavaFileObject {
                 || getName().endsWith("/" + baseName));
     }
 
-    @Override
-    public NestingKind getNestingKind() {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public Modifier getAccessLevel() {
-        throw new UnsupportedOperationException();
-    }
-
-    public String binaryName() {
+    String binaryName() {
         return binaryName;
     }
 

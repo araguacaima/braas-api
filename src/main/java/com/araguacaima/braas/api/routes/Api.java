@@ -3,7 +3,8 @@ package com.araguacaima.braas.api.routes;
 import com.araguacaima.braas.api.BeanBuilder;
 import com.araguacaima.braas.api.Server;
 import com.araguacaima.braas.api.common.Commons;
-import com.araguacaima.braas.api.jsonschema.CustomClassloaderJavaFileManager;
+import com.araguacaima.braas.api.jsonschema.JavaSourceFromString;
+import com.araguacaima.braas.api.jsonschema.OutputStreamJavaFileManager;
 import com.araguacaima.braas.api.jsonschema.PackageClass;
 import com.araguacaima.braas.api.jsonschema.RuleFactory;
 import com.araguacaima.braas.core.drools.DroolsConfig;
@@ -23,8 +24,8 @@ import spark.RouteGroup;
 
 import javax.servlet.http.Part;
 import javax.tools.*;
-import java.io.*;
-import java.net.URI;
+import java.io.File;
+import java.io.IOException;
 import java.nio.charset.Charset;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -54,6 +55,7 @@ public class Api implements RouteGroup {
     public static final String CLASS_SUFFIX = "class";
     public static final String JSON_SUFFIX = "json";
     public static final String DEFINITIONS_ROOT = "definitions";
+    private static final String JAR_NAME = "rules-model.jar";
     private static Logger log = LoggerFactory.getLogger(Api.class);
     private static GenerationConfig config = new DefaultGenerationConfig() {
 
@@ -161,10 +163,10 @@ public class Api implements RouteGroup {
                         Iterator<File> files = FileUtils.iterateFilesAndDirs(schemaFile, new SuffixFileFilter(JSON_SUFFIX), TrueFileFilter.INSTANCE);
                         while (files.hasNext()) {
                             File file = files.next();
-                            processFile(file, packageName, sourceClassesDir, compiledClassesDir);
+                            processFile(file, packageName, sourceClassesDir, compiledClassesDir, JAR_NAME);
                         }
                     } else if (schemaFile.isFile()) {
-                        processFile(schemaFile, packageName, sourceClassesDir, compiledClassesDir);
+                        processFile(schemaFile, packageName, sourceClassesDir, compiledClassesDir, JAR_NAME);
                     }
                     if (StringUtils.isNotBlank(rulesPath)) {
                         DroolsConfig droolsConfig = (DroolsConfig) ctx.getSessionAttribute("drools-config");
@@ -294,14 +296,13 @@ public class Api implements RouteGroup {
         codeModel.build(rootDirectory);
     }
 
-    public void compileSources(File javaSourcesFile, File outputDirectory) throws IOException, IllegalAccessException, NoSuchFieldException, ClassNotFoundException {
+    public void compileSources(File javaSourcesFile, File outputDirectory, String jarName) throws IOException, IllegalAccessException, NoSuchFieldException, ClassNotFoundException {
         File[] sourceFiles = org.apache.commons.io.FileUtils.listFiles(javaSourcesFile, new String[]{"java"}, true).toArray(new File[]{});
         JavaCompiler javaCompiler = ToolProvider.getSystemJavaCompiler();
-        OutputStreamJavaFileManager<JavaFileManager> fileManager =
-                new OutputStreamJavaFileManager<>(javaCompiler.getStandardFileManager(null, null, null), outputDirectory);
         DiagnosticCollector<JavaFileObject> diagnostics = new DiagnosticCollector<>();
-        StandardJavaFileManager standardJavaFileManager = javaCompiler.getStandardFileManager(diagnostics, null, null);
-        final JavaFileManager fileManager1 = new CustomClassloaderJavaFileManager(classLoaderUtils.getClassLoader(), standardJavaFileManager, outputDirectory);
+        OutputStreamJavaFileManager<JavaFileManager> fileManager = new OutputStreamJavaFileManager<>(javaCompiler.getStandardFileManager(null, null, null), outputDirectory);
+        //StandardJavaFileManager standardJavaFileManager = javaCompiler.getStandardFileManager(diagnostics, null, null);
+        //JavaFileManager fileManager = new CustomClassloaderJavaFileManager(classLoaderUtils.getClassLoader(), standardJavaFileManager, outputDirectory);
 
         List<JavaFileObject> fileObjects = new ArrayList<>();
         for (File file : sourceFiles) {
@@ -309,7 +310,7 @@ public class Api implements RouteGroup {
         }
         List<String> options = Arrays.asList("-classpath", classLoaderUtils.getClasspath());
 
-        JavaCompiler.CompilationTask task = javaCompiler.getTask(null, fileManager1, diagnostics, options, null, fileObjects);
+        JavaCompiler.CompilationTask task = javaCompiler.getTask(null, fileManager, diagnostics, options, null, fileObjects);
         if (!task.call()) {
             StringBuilder errorMsg = new StringBuilder();
             for (Diagnostic d : diagnostics.getDiagnostics()) {
@@ -322,8 +323,13 @@ public class Api implements RouteGroup {
         }
         fileManager.close();
         fileManager.flush();
-        classLoaderUtils.addToClasspath(outputDirectory.getCanonicalPath());
-
+        String path1 = outputDirectory.getCanonicalPath();
+        File jarFile = new File(outputDirectory.getParentFile(), jarName);
+        jarFile.delete();
+        jarUtils.generateJarFromDirectory(path1, jarFile.getCanonicalPath());
+        classLoaderUtils.addFile(jarFile);
+        classLoaderUtils.addToClasspath(path1);
+        classLoaderUtils.addResourceToDependencies(jarFile.getCanonicalPath());
         File[] compiledFiles = org.apache.commons.io.FileUtils.listFiles(outputDirectory, new String[]{"class"}, true).toArray(new File[]{});
         for (File file : compiledFiles) {
             String path = file.getCanonicalPath();
@@ -385,7 +391,7 @@ public class Api implements RouteGroup {
         return map;
     }
 
-    private void processFile(File file, String packageName, File sourceFilesDirectory, File compiledFilesDirectory) throws IOException, ClassNotFoundException, NoSuchFieldException, IllegalAccessException {
+    private void processFile(File file, String packageName, File sourceFilesDirectory, File compiledFilesDirectory, String jarName) throws IOException, ClassNotFoundException, NoSuchFieldException, IllegalAccessException {
         String json = FileUtils.readFileToString(file, Charset.forName("UTF-8"));
         try {
             Map<String, String> jsonSchema = jsonUtils.fromJSON(json, Map.class);
@@ -439,7 +445,7 @@ public class Api implements RouteGroup {
             });
             definitionsToClasses(definitionMap, ids, sourceFilesDirectory);
         }
-        compileSources(sourceFilesDirectory, compiledFilesDirectory);
+        compileSources(sourceFilesDirectory, compiledFilesDirectory, jarName);
     }
 
     private void definitionsToClasses(LinkedHashMap<String, LinkedHashMap> definitions, Set<String> ids, File rootDirectory) throws IOException, NoSuchFieldException, IllegalAccessException {
@@ -478,71 +484,6 @@ public class Api implements RouteGroup {
                 map.put(DEFINITIONS_ROOT, result);
                 jsonToSourceClassFile(jsonUtils.toJSON(map), StringUtils.capitalize(className), packageName, rootDirectory);
             }
-        }
-    }
-
-    private static class OutputStreamSimpleFileObject extends SimpleJavaFileObject {
-        private OutputStream outputStream;
-
-        public OutputStreamSimpleFileObject(final URI uri, final JavaFileObject.Kind kind,
-                                            final OutputStream outputStream) {
-            super(uri, kind);
-            this.outputStream = outputStream;
-        }
-
-        @Override
-        public OutputStream openOutputStream() {
-            return this.outputStream;
-        }
-    }
-
-    private static class OutputStreamJavaFileManager<M extends JavaFileManager>
-            extends ForwardingJavaFileManager<M> {
-        private File outputDirectory;
-
-        protected OutputStreamJavaFileManager(final M fileManager, final File outputDirectory) {
-            super(fileManager);
-            this.outputDirectory = outputDirectory;
-        }
-
-        @Override
-        public JavaFileObject getJavaFileForOutput(final JavaFileManager.Location location,
-                                                   final String className, final JavaFileObject.Kind kind, final FileObject sibling) {
-            OutputStream outputStream;
-            try {
-                PackageClass packageClass = PackageClass.instance(className);
-                String package_ = packageClass.getPackageName();
-                String class_ = packageClass.getClassName();
-                File outputFile = FileUtils.makeDirFromPackageName(outputDirectory, package_);
-                outputFile = new File(outputFile, class_ + ".class");
-                outputStream = new FileOutputStream(outputFile);
-            } catch (IOException e) {
-                e.printStackTrace();
-                outputStream = new ByteArrayOutputStream();
-            }
-            return new OutputStreamSimpleFileObject(new File(className).toURI(), kind, outputStream);
-        }
-    }
-
-    private static class JavaSourceFromString extends SimpleJavaFileObject {
-
-        private String code;
-
-        /**
-         * Construct a SimpleJavaFileObject of the given kind and with the
-         * given URI.
-         *
-         * @param uri  the URI for this file object
-         * @param code Code
-         */
-        public JavaSourceFromString(URI uri, String code) {
-            super(uri, Kind.SOURCE);
-            this.code = code;
-        }
-
-        @Override
-        public CharSequence getCharContent(boolean ignoreEncodingErrors) {
-            return this.code;
         }
     }
 

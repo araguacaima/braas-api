@@ -33,11 +33,13 @@ import org.slf4j.LoggerFactory;
 import spark.*;
 import spark.route.HttpMethod;
 
-
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.Part;
-import java.io.*;
+import java.io.File;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.StringBufferInputStream;
 import java.net.URISyntaxException;
 import java.net.URL;
 import java.nio.charset.Charset;
@@ -100,6 +102,7 @@ public class Commons {
     public static final String STORED_RANKS = "STORED_RANKS";
     public static final String BREADCRUMBS_SEPARATOR = " | ";
     public static final ReflectionUtils reflectionUtils = new ReflectionUtils(null);
+    final static Config config = new ConfigFactory(JWT_SALT, engine).build(deployedServer, DEFAULT_PATH, clients);
     private static Logger log = LoggerFactory.getLogger(Commons.class);
     public static final ExceptionHandler exceptionHandler = new ExceptionHandlerImpl(Exception.class) {
         @Override
@@ -125,14 +128,11 @@ public class Commons {
             response.body(render(errorMap, "error"));
         }
     };
-
-    final static Config config = new ConfigFactory(JWT_SALT, engine).build(deployedServer, DEFAULT_PATH, clients);
     //final static CallbackRoute callback = new CallbackRoute(config, null, true);
     //static Filter strongSecurityFilter = Authentication.buildStrongSecurityFilter(config);
     //static Filter adminApiFilter = new AdminAPIFilter(config, clients, "adminAuthorizer,custom," + DefaultAuthorizers.ALLOW_AJAX_REQUESTS + "," + DefaultAuthorizers.IS_AUTHENTICATED);
     //static Filter apiFilter = new APIFilter(config, clients, "checkHttpMethodAuthorizer,requireAnyRoleAuthorizer,custom," + DefaultAuthorizers.ALLOW_AJAX_REQUESTS + "," + DefaultAuthorizers.IS_AUTHENTICATED);
     //static Filter scopesFilter = new ScopesFilter(config, clients, "filterAllRolesAuthorizer");
-
 
     static {
         jsonUtils.getMapper().setSerializationInclusion(JsonInclude.Include.NON_NULL);
@@ -465,11 +465,6 @@ public class Commons {
         return new ArrayList<>();
     }
 
-    public enum InputOutput {
-        input,
-        output
-    }
-
     public static String getStringFromMultipart(Request request, String partName) throws IOException, ServletException {
         HttpServletRequest raw = request.raw();
         raw.setAttribute("org.eclipse.jetty.multipartConfig", multipartConfigElement);
@@ -507,6 +502,11 @@ public class Commons {
             }
         }
         return null;
+    }
+
+    public enum InputOutput {
+        input,
+        output
     }
 
 }

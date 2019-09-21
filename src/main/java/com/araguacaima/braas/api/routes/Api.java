@@ -3,7 +3,7 @@ package com.araguacaima.braas.api.routes;
 import com.araguacaima.braas.api.BeanBuilder;
 import com.araguacaima.braas.api.Server;
 import com.araguacaima.braas.api.common.Commons;
-import com.araguacaima.braas.api.jsonschema.Compiler;
+import com.araguacaima.braas.api.jsonschema.FilesCompiler;
 import com.araguacaima.braas.api.jsonschema.PackageClass;
 import com.araguacaima.braas.api.jsonschema.RuleFactory;
 import com.araguacaima.braas.core.drools.DroolsConfig;
@@ -116,18 +116,17 @@ public class Api implements RouteGroup {
     private static NoopAnnotator noopAnnotator = new NoopAnnotator();
     private static SchemaStore schemaStore = new SchemaStore();
     private static SchemaGenerator schemaGenerator = new SchemaGenerator();
-
-    private ZipUtils zipUtils = new ZipUtils();
-    private JarUtils jarUtils = new JarUtils();
     private static ClassLoaderUtils classLoaderUtils = new ClassLoaderUtils(Api.class.getClassLoader());
-    private Collection<Option> with = ImmutableList.of(Option.FLATTENED_ENUMS, Option.SIMPLIFIED_ENUMS, Option.DEFINITIONS_FOR_ALL_OBJECTS);
-    private Collection<Option> without = null;
-
-    private FileUtils fileUtils = new FileUtils();
 
     static {
         classLoaderUtils.init();
     }
+
+    private ZipUtils zipUtils = new ZipUtils();
+    private JarUtils jarUtils = new JarUtils();
+    private Collection<Option> with = ImmutableList.of(Option.FLATTENED_ENUMS, Option.SIMPLIFIED_ENUMS, Option.DEFINITIONS_FOR_ALL_OBJECTS);
+    private Collection<Option> without = null;
+    private FilesCompiler filesCompiler = new FilesCompiler(classLoaderUtils);
 
     @Override
     public void addRoutes() {
@@ -294,70 +293,13 @@ public class Api implements RouteGroup {
         codeModel.build(rootDirectory);
     }
 
-    public void compileSources(File javaSourcesFile) throws IOException, ClassNotFoundException {
-        classLoaderUtils.addToClasspath(javaSourcesFile.getCanonicalPath());
-        Compiler compiler = new Compiler(classLoaderUtils.getClasspath());
-        File[] sourceFiles = org.apache.commons.io.FileUtils.listFiles(javaSourcesFile, new String[]{"java"}, true).toArray(new File[]{});
-        for (File file : sourceFiles) {
-            String fullyQualifiedFileName = fileUtils.getRelativePathFrom(javaSourcesFile, file).substring(1);
-            fullyQualifiedFileName = fullyQualifiedFileName.replaceAll("\\\\", ".").replaceAll("/", ".")
-                    + "." + file.getName().replace(".java", StringUtils.EMPTY);
-            Class class_ = compiler.compile(fullyQualifiedFileName, FileUtils.readFileToString(file, Charset.forName("UTF-8")));
-            classLoaderUtils.loadClass(class_);
+    public void compileSources(File sourceCodeDirectory, File compiledClassesDirectory) throws IOException, ClassNotFoundException {
+
+        Set<Class<?>> classes = filesCompiler.compile(sourceCodeDirectory, compiledClassesDirectory, org.apache.commons.io.FileUtils.listFiles(sourceCodeDirectory, new String[]{"java"}, true));
+        for (Class clazz : classes) {
+            classLoaderUtils.loadClass(clazz);
         }
     }
-
-/*
-    public void compileSources2(File javaSourcesFile, File outputDirectory, String jarName) throws IOException, IllegalAccessException, NoSuchFieldException, ClassNotFoundException {
-        File[] sourceFiles = org.apache.commons.io.FileUtils.listFiles(javaSourcesFile, new String[]{"java"}, true).toArray(new File[]{});
-        JavaCompiler javaCompiler = ToolProvider.getSystemJavaCompiler();
-        DiagnosticCollector<JavaFileObject> diagnostics = new DiagnosticCollector<>();
-        //OutputStreamJavaFileManager<JavaFileManager> fileManager = new OutputStreamJavaFileManager<>(javaCompiler.getStandardFileManager(null, null, null), outputDirectory);
-        StandardJavaFileManager standardJavaFileManager = javaCompiler.getStandardFileManager(diagnostics, null, null);
-        JavaFileManager fileManager = new CustomClassloaderJavaFileManager<>(classLoaderUtils.getClassLoader(), standardJavaFileManager, outputDirectory);
-
-        List<JavaFileObject> fileObjects = new ArrayList<>();
-        for (File file : sourceFiles) {
-            fileObjects.add(new JavaSourceFromString(file.toURI(), FileUtils.readFileToString(file, Charset.forName("UTF-8"))));
-        }
-        List<String> options = Arrays.asList("-classpath", classLoaderUtils.getClasspath());
-
-        JavaCompiler.CompilationTask task = javaCompiler.getTask(null, fileManager, diagnostics, options, null, fileObjects);
-        if (!task.call()) {
-            StringBuilder errorMsg = new StringBuilder();
-            for (Diagnostic d : diagnostics.getDiagnostics()) {
-                String err = String.format("Compilation error: Line %d - %s%n", d.getLineNumber(),
-                        d.getMessage(null));
-                errorMsg.append(err);
-                System.err.print(err);
-            }
-            throw new IOException(errorMsg.toString());
-        }
-        fileManager.close();
-        fileManager.flush();
-        String path1 = outputDirectory.getCanonicalPath();
-        File jarFile = new File(outputDirectory.getParentFile(), jarName);
-        if (jarFile.exists()) {
-            try {
-                FileUtils.forceDelete(jarFile);
-            } catch (Throwable ignored) {
-            }
-        }
-        jarUtils.generateJarFromDirectory(outputDirectory, jarFile);
-        classLoaderUtils.addFile(jarFile);
-        classLoaderUtils.addToClasspath(path1);
-        classLoaderUtils.addResourceToDependencies(jarFile.getCanonicalPath());
-        classLoaderUtils.loadClassesInsideJar(jarFile);
-        File[] compiledFiles = org.apache.commons.io.FileUtils.listFiles(outputDirectory, new String[]{"class"}, true).toArray(new File[]{});
-        for (File file : compiledFiles) {
-            String path = file.getCanonicalPath();
-            String class_ = fileUtils.getRelativePathFrom(outputDirectory, file).substring(1);
-            class_ = class_.replaceAll("/", ".").replaceAll("\\\\", ".") + "." + file.getName().replace(".class", StringUtils.EMPTY);
-            classLoaderUtils.addResourceToDependencies(path);
-            classLoaderUtils.loadClass(class_);
-        }
-    }
-*/
 
     private Map getLastValueFromPackageName(String key, Map parentMap) {
         if (StringUtils.isBlank(key)) {
@@ -464,8 +406,7 @@ public class Api implements RouteGroup {
             });
             definitionsToClasses(definitionMap, ids, sourceFilesDirectory);
         }
-        compileSources(sourceFilesDirectory);
-        //compileSources(sourceFilesDirectory, compiledFilesDirectory, jarName);
+        compileSources(sourceFilesDirectory, compiledFilesDirectory);
     }
 
     private void definitionsToClasses(LinkedHashMap<String, LinkedHashMap> definitions, Set<String> ids, File rootDirectory) throws IOException, NoSuchFieldException, IllegalAccessException {

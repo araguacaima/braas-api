@@ -12,7 +12,6 @@ import com.araguacaima.commons.utils.StringUtils;
 import com.araguacaima.commons.utils.ZipUtils;
 import com.github.victools.jsonschema.generator.Option;
 import com.google.common.collect.ImmutableList;
-import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.io.filefilter.SuffixFileFilter;
 import org.apache.commons.io.filefilter.TrueFileFilter;
 import org.pac4j.sparkjava.SparkWebContext;
@@ -27,7 +26,10 @@ import java.nio.charset.Charset;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.*;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.Map;
 
 import static com.araguacaima.braas.api.Server.engine;
 import static com.araguacaima.braas.api.common.Commons.*;
@@ -85,12 +87,14 @@ public class Api implements RouteGroup {
                 log.debug("Schema path '" + schemaPath + "' loaded!");
                 ctx.setSessionAttribute("rules-base-file-name", rulesPath);
                 schemaFile = new File(schemaPath);
-                Set<Class<?>> classes = ApiController.buildClassesFromMultipartJsonSchema(
+                ClassLoader classLoader = ApiController.buildClassesFromMultipartJsonSchema_(
                         schemaFile, getFileNameFromPart(request.raw().getPart(FILE_NAME_PREFIX)), sourceClassesDir, compiledClassesDir);
-                if (CollectionUtils.isNotEmpty(classes)) {
+                if (classLoader != null) {
                     ctx.setSessionAttribute("drools-config", ApiController.createDroolsConfig(
-                            rulesPath, classes, (DroolsConfig) ctx.getSessionAttribute("drools-config")));
+                            rulesPath, classLoader, (DroolsConfig) ctx.getSessionAttribute("drools-config")));
                     response.status(HTTP_CREATED);
+                } else {
+                    response.status(HTTP_INTERNAL_ERROR);
                 }
             } catch (Throwable ex) {
                 ex.printStackTrace();

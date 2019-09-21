@@ -21,11 +21,32 @@ import static com.araguacaima.braas.api.routes.Api.JSON_SUFFIX;
 
 public class ApiController {
 
-    private static JsonSchemaUtils jsonSchemaUtils = new JsonSchemaUtils();
+    public static ClassLoader buildClassesFromMultipartJsonSchema_(File schemaFile, String fileNameFromPart, File sourceClassesDir, File compiledClassesDir) throws InternalBraaSException {
+        ClassLoader classLoader = null;
+        try {
+            JsonSchemaUtils jsonSchemaUtils = new JsonSchemaUtils();
+            if (schemaFile.exists()) {
+                String packageName = (Objects.requireNonNull(fileNameFromPart)).replaceAll("-", ".");
+                if (schemaFile.isDirectory()) {
+                    Iterator<File> files = FileUtils.iterateFilesAndDirs(schemaFile, new SuffixFileFilter(JSON_SUFFIX), TrueFileFilter.INSTANCE);
+                    while (files.hasNext()) {
+                        File file = files.next();
+                        classLoader = jsonSchemaUtils.processFile_(file, packageName, sourceClassesDir, compiledClassesDir);
+                    }
+                } else if (schemaFile.isFile()) {
+                    classLoader = jsonSchemaUtils.processFile_(schemaFile, packageName, sourceClassesDir, compiledClassesDir);
+                }
+            }
+        } catch (URISyntaxException | NoSuchFieldException | IllegalAccessException | IOException e) {
+            throw new InternalBraaSException(e);
+        }
+        return classLoader;
+    }
 
     public static Set<Class<?>> buildClassesFromMultipartJsonSchema(File schemaFile, String fileNameFromPart, File sourceClassesDir, File compiledClassesDir) throws InternalBraaSException {
         Set<Class<?>> classes = null;
         try {
+            JsonSchemaUtils jsonSchemaUtils = new JsonSchemaUtils();
             if (schemaFile.exists()) {
                 classes = new LinkedHashSet<>();
                 String packageName = (Objects.requireNonNull(fileNameFromPart)).replaceAll("-", ".");
@@ -39,10 +60,28 @@ public class ApiController {
                     classes.addAll(jsonSchemaUtils.processFile(schemaFile, packageName, sourceClassesDir, compiledClassesDir));
                 }
             }
-        } catch (ClassNotFoundException | URISyntaxException | NoSuchFieldException | IllegalAccessException | IOException e) {
+        } catch (URISyntaxException | NoSuchFieldException | IllegalAccessException | IOException e) {
             throw new InternalBraaSException(e);
         }
         return classes;
+    }
+
+    public static DroolsConfig createDroolsConfig(String rulesPath, ClassLoader classLoader, DroolsConfig droolsConfig) throws InternalBraaSException {
+        try {
+            if (StringUtils.isNotBlank(rulesPath)) {
+                if (droolsConfig == null) {
+                    Properties props = new PropertiesHandler("drools-absolute-path-decision-table.properties", ApiController.class.getClassLoader()).getProperties();
+                    props.setProperty("decision.table.path", rulesPath);
+                    droolsConfig = new DroolsConfig(props);
+                    droolsConfig.setClassLoader(classLoader);
+                }
+            } else {
+                droolsConfig.setClassLoader(classLoader);
+            }
+        } catch (FileNotFoundException | MalformedURLException | URISyntaxException | PropertiesUtilException e) {
+            throw new InternalBraaSException(e);
+        }
+        return droolsConfig;
     }
 
     public static DroolsConfig createDroolsConfig(String rulesPath, Set<Class<?>> classes, DroolsConfig droolsConfig) throws InternalBraaSException {

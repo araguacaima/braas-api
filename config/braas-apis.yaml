@@ -29,20 +29,15 @@ paths:
       operationId: get-base
       produces:
         - application/vnd.google-apps.spreadsheet
-      parameters:
-        - in: cookie
-          name: braas-session-id
-          schema:
-            type: string
-          required: true
       responses:
         200:
           description: OK
         204:
           description: No content
       security:
-        - braas_auth:
+        - braas-auth:
           - read:base
+        - braas-session-id: []
     post:
       tags:
       - Rules base
@@ -68,11 +63,6 @@ paths:
           type: file
           required: false
           description: A file with a json map containing every class and its associated schema used within rules. If you chose to omit this parameter you should mandatory provide a schema-json, as described above
-        - in: cookie
-          name: braas-session-id
-          schema:
-            type: string
-          required: true
       responses:
         201:
          description: Created
@@ -85,9 +75,10 @@ paths:
         409:
           description: Conflict
       security:
-        - braas_auth:
+        - braas-auth:
           - write:rule
           - read:rule
+        - braas-session-id: []
     put:
       tags:
         - Rules base
@@ -114,11 +105,6 @@ paths:
           type: file
           required: false
           description: A file with a json map containing every class and its associated schema used within rules.
-        - in: cookie
-          name: braas-session-id
-          schema:
-            type: string
-          required: true
       responses:
         201:
          description: Created
@@ -131,28 +117,24 @@ paths:
         409:
           description: Conflict
       security:
-        - braas_auth:
+        - braas-auth:
           - write:rule
           - read:rule
+        - braas-session-id: []
     delete:
       tags:
         - Rules base
       summary: Delete an existent rule's base
       description: Delete the rule's base previously uploaded. This method will fail if no rule's base was previously uploaded
-      parameters:
-        - in: cookie
-          name: braas-session-id
-          schema:
-            type: string
-          required: true
       responses:
         200:
           description: OK
         404:
           description: model not found
       security:
-        - braas_auth:
+        - braas-auth:
           - delete:rule
+        - braas-session-id: []
   /api/assets:
     post:
       tags:
@@ -168,11 +150,6 @@ paths:
           description: The set of assets to be executed. It could be a single object or an array of them.
           schema:
             type: object
-        - in: cookie
-          name: braas-session-id
-          schema:
-            type: string
-          required: true
       responses:
         202:
           description: Accepted
@@ -183,9 +160,10 @@ paths:
         424:
           description: Failed dependency
       security:
-        - braas_auth:
+        - braas-auth:
           - read:base
           - execute:rule
+        - braas-session-id: []
   /api/json-schema:
     post:
       tags:
@@ -221,7 +199,7 @@ paths:
         409:
           description: Conflict
 securityDefinitions:
-  braas_auth:
+  braas-auth:
     type: oauth2
     authorizationUrl: http://${DEPLOYED_SERVER}/login
     tokenUrl: http://${DEPLOYED_SERVER}/oauth/token
@@ -232,7 +210,11 @@ securityDefinitions:
       read:base: Read the rule's base
       execute:rule: Execute a set of assets according to the rule's base
       admin: Full administrative rights
-  api_key:
+  api-key:
     type: apiKey
     name: apiKey
     in: header
+  braas-session-id:
+    type: basic
+    name: Cookie
+    in: header    

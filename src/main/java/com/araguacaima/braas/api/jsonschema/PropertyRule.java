@@ -83,9 +83,9 @@ public class PropertyRule extends org.jsonschema2pojo.rules.PropertyRule {
                         ref = ref.substring(1);
                     }
                 }
-                PackageClass packageClass = new PackageClass(ref).invoke();
-                ref = packageClass.getPackageName();
-                String className = packageClass.getClassName();
+                PackageClassUtils packageClassUtils = new PackageClassUtils(ref).invoke();
+                ref = packageClassUtils.getPackageName();
+                String className = packageClassUtils.getClassName();
                 JFieldVar fieldVar = jclass.fields().get(nodeName);
                 if (fieldVar != null) {
                     JType type = fieldVar.type();

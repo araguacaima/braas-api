@@ -1,42 +1,41 @@
 package com.araguacaima.braas.api.jsonschema;
 
-import com.araguacaima.commons.utils.ClassLoaderUtils;
 import org.joor.Reflect;
 import org.joor.ReflectException;
 
 import javax.tools.*;
 import java.io.*;
 import java.lang.invoke.MethodHandles;
-import java.net.URI;
-import java.net.URL;
-import java.net.URLConnection;
+import java.net.*;
 import java.nio.charset.Charset;
 import java.util.*;
 
+@SuppressWarnings("unused")
 public class FilesCompiler {
 
-    private static final MethodHandles.Lookup lookup = MethodHandles.lookup();
-    private static final ClassLoader cl = lookup.lookupClass().getClassLoader();
     private static final JavaCompiler compiler = ToolProvider.getSystemJavaCompiler();
-    private final ClassLoaderUtils classLoaderUtils;
+    private ClassLoader classLoader;
 
-    public FilesCompiler(ClassLoaderUtils classLoaderUtils) {
-        this.classLoaderUtils = classLoaderUtils;
+    public FilesCompiler() {
+        this(MethodHandles.lookup().lookupClass().getClassLoader());
+    }
+
+    public FilesCompiler(ClassLoader classLoader) {
+        this.classLoader = classLoader;
     }
 
     public Set<Class<?>> compile(List<String> options, File sourceCodeDirectory, Collection<File> files) throws IOException {
         List<CharSequenceJavaFileObject> files_ = new ArrayList<>();
         for (File file : files) {
-            PackageClass packageClass = PackageClass.instance(sourceCodeDirectory, file, ".java");
+            PackageClassUtils packageClassUtils = PackageClassUtils.instance(sourceCodeDirectory, file, ".java");
             String content = org.apache.commons.io.FileUtils.readFileToString(file, Charset.forName("UTF-8"));
-            String className = packageClass.getFullyQualifiedClassName();
+            String className = packageClassUtils.getFullyQualifiedClassName();
             files_.add(new FilesCompiler.CharSequenceJavaFileObject(className, content));
         }
         return compile(options, files_);
     }
 
     public Set<Class<?>> compile(List<String> options, List<FilesCompiler.CharSequenceJavaFileObject> files) {
-
         try {
             FilesCompiler.ClassFileManager fileManager = new FilesCompiler.ClassFileManager(compiler.getStandardFileManager(null, null, null));
             StringWriter out = new StringWriter();
@@ -45,8 +44,7 @@ public class FilesCompiler {
 
             if (!task.call()) {
                 for (Diagnostic d : diagnostics.getDiagnostics()) {
-                    String err = String.format("Compilation error: Line %d - %s%n", d.getLineNumber(),
-                            d.getMessage(null));
+                    String err = String.format("Compilation error: Line %d - %s%n", d.getLineNumber(), d.getMessage(null));
                     System.err.print(err);
                 }
             }
@@ -57,16 +55,19 @@ public class FilesCompiler {
 
             Set<Class<?>> resultList = new LinkedHashSet<>();
             for (CharSequenceJavaFileObject file : files) {
-                String className = PackageClass.instance(file.getName()).getFullyQualifiedClassName();
+                String className = PackageClassUtils.instance(file.getName()).getFullyQualifiedClassName();
                 Class<?> result;
                 try {
-                    cl.loadClass(className);
-                    ReloadableClassLoader newCl = new ReloadableClassLoader(cl);
-                    result = fileManager.loadAndReturnMainClass(className,
-                            (name, bytes) -> Reflect.on(newCl).call("defineClass", name, bytes, 0, bytes.length).get());
+                    classLoader.loadClass(className);
+                    ReloadableClassLoader tempClassLoader = new ReloadableClassLoader(classLoader);
+                    result = fileManager.loadAndReturnMainClass(className, (name, bytes) -> {
+                        Reflect.on(tempClassLoader).call("defineClass", name, bytes, 0, bytes.length).get();
+                        return tempClassLoader.loadClass(name, bytes);
+                    });
+                    classLoader = tempClassLoader;
                 } catch (Throwable ignored) {
                     result = fileManager.loadAndReturnMainClass(className,
-                            (name, bytes) -> Reflect.on(cl).call("defineClass", name, bytes, 0, bytes.length).get());
+                            (name, bytes) -> Reflect.on(classLoader).call("defineClass", name, bytes, 0, bytes.length).get());
                 }
                 resultList.add(result);
             }
@@ -78,10 +79,32 @@ public class FilesCompiler {
         }
     }
 
-    public Set<Class<?>> compile(File sourceCodeDirectory, File compiledClassesDirectory, Collection<File> listFiles) throws IOException {
-        classLoaderUtils.addToClasspath(sourceCodeDirectory.getCanonicalPath());
-        List<String> options = Arrays.asList("-classpath", "\"" + classLoaderUtils.getClasspath() + "\"", "-d", compiledClassesDirectory.getCanonicalPath());
+    public Set<Class<?>> compile(File sourceCodeDirectory, File compiledClassesDirectory, Collection<File> listFiles) throws IOException, URISyntaxException {
+        List<String> options = Arrays.asList("-d", compiledClassesDirectory.getCanonicalPath());
+        if (!options.contains("-classpath")) {
+            StringBuilder classpath = new StringBuilder();
+            String separator = System.getProperty("path.separator");
+            String prop = System.getProperty("java.class.path");
+            if (prop != null && !"".equals(prop)) {
+                classpath.append(prop);
+            }
+            if (classLoader instanceof URLClassLoader) {
+                for (URL url : ((URLClassLoader) classLoader).getURLs()) {
+                    if (classpath.length() > 0) {
+                        classpath.append(separator);
+                    }
+                    if ("file".equals(url.getProtocol())) {
+                        classpath.append(new File(url.toURI()));
+                    }
+                }
+            }
+            options.addAll(Arrays.asList("-classpath", classpath.toString()));
+        }
         return compile(options, sourceCodeDirectory, listFiles);
+    }
+
+    public ClassLoader getClassLoader() {
+        return classLoader;
     }
 
     @FunctionalInterface
@@ -89,7 +112,7 @@ public class FilesCompiler {
         R apply(T t, U u) throws Exception;
     }
 
-    static final class JavaFileObject extends SimpleJavaFileObject {
+    private static final class JavaFileObject extends SimpleJavaFileObject {
         final ByteArrayOutputStream os = new ByteArrayOutputStream();
 
         JavaFileObject(String name, FilesCompiler.JavaFileObject.Kind kind) {
@@ -106,13 +129,12 @@ public class FilesCompiler {
         }
     }
 
-    static final class ClassFileManager extends ForwardingJavaFileManager<StandardJavaFileManager> {
+    private static final class ClassFileManager extends ForwardingJavaFileManager<StandardJavaFileManager> {
         private final Map<String, FilesCompiler.JavaFileObject> fileObjectMap;
         private Map<String, byte[]> classes;
 
         ClassFileManager(StandardJavaFileManager standardManager) {
             super(standardManager);
-
             fileObjectMap = new HashMap<>();
         }
 
@@ -121,8 +143,7 @@ public class FilesCompiler {
                 JavaFileManager.Location location,
                 String className,
                 FilesCompiler.JavaFileObject.Kind kind,
-                FileObject sibling
-        ) {
+                FileObject sibling) {
             FilesCompiler.JavaFileObject result = new FilesCompiler.JavaFileObject(className, kind);
             fileObjectMap.put(className, result);
             return result;
@@ -136,8 +157,9 @@ public class FilesCompiler {
             if (classes == null) {
                 classes = new HashMap<>();
 
-                for (Map.Entry<String, FilesCompiler.JavaFileObject> entry : fileObjectMap.entrySet())
+                for (Map.Entry<String, FilesCompiler.JavaFileObject> entry : fileObjectMap.entrySet()) {
                     classes.put(entry.getKey(), entry.getValue().getBytes());
+                }
             }
 
             return classes;
@@ -156,10 +178,10 @@ public class FilesCompiler {
         }
     }
 
-    public static final class CharSequenceJavaFileObject extends SimpleJavaFileObject {
+    private static final class CharSequenceJavaFileObject extends SimpleJavaFileObject {
         final CharSequence content;
 
-        public CharSequenceJavaFileObject(String className, CharSequence content) {
+        CharSequenceJavaFileObject(String className, CharSequence content) {
             super(URI.create("string:///" + className.replace('.', '/') + FilesCompiler.JavaFileObject.Kind.SOURCE.extension), FilesCompiler.JavaFileObject.Kind.SOURCE);
             this.content = content;
         }
@@ -170,13 +192,13 @@ public class FilesCompiler {
         }
     }
 
-    final class ReloadableClassLoader extends ClassLoader {
+    private static final class ReloadableClassLoader extends ClassLoader {
 
-        public ReloadableClassLoader(ClassLoader parent) {
+        ReloadableClassLoader(ClassLoader parent) {
             super(parent);
         }
 
-        public Class loadClass(String name, URL myUrl) {
+        Class loadClass(String name, URL myUrl) {
 
             try {
                 URLConnection connection = myUrl.openConnection();
@@ -200,7 +222,12 @@ public class FilesCompiler {
             }
             return null;
         }
+
+        Class loadClass(String name, byte[] classData) {
+            return defineClass(name, classData, 0, classData.length);
+        }
     }
+
 }
 
 

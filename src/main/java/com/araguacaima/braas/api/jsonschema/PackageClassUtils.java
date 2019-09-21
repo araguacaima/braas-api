@@ -5,7 +5,7 @@ import com.araguacaima.commons.utils.StringUtils;
 
 import java.io.File;
 
-public class PackageClass {
+public class PackageClassUtils {
 
     private static FileUtils fileUtils = new FileUtils();
 
@@ -16,7 +16,7 @@ public class PackageClass {
     private String fullyQualifiedClassName;
 
 
-    public PackageClass(String id) {
+    public PackageClassUtils(String id) {
         this.id = id;
         if (this.id != null) {
             if (this.id.startsWith(".") || this.id.startsWith("\\") || this.id.startsWith("/")) {
@@ -30,11 +30,11 @@ public class PackageClass {
         }
     }
 
-    public static PackageClass instance(String id) {
-        return new PackageClass(id).invoke();
+    public static PackageClassUtils instance(String id) {
+        return new PackageClassUtils(id).invoke();
     }
 
-    public static PackageClass instance(File root, File relative, String suffix) {
+    public static PackageClassUtils instance(File root, File relative, String suffix) {
         return instance(fileUtils.getRelativePathFrom(root, relative).substring(1) + File.separator + relative.getName().replace(suffix, StringUtils.EMPTY));
     }
 
@@ -50,7 +50,7 @@ public class PackageClass {
         return fullyQualifiedClassName;
     }
 
-    public PackageClass invoke() {
+    public PackageClassUtils invoke() {
         if (id.contains(".")) {
             className = id.substring(id.lastIndexOf('.') + 1);
             packageName = id.substring(0, id.lastIndexOf('.'));

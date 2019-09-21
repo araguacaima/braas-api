@@ -121,7 +121,7 @@ public class Server {
                 tempDir = new File(baseDir, sessionId);
             }
 
-            if (StringUtils.isBlank(storedSessionId) || tempDir == null) {
+            if (StringUtils.isBlank(storedSessionId) || tempDir == null || !tempDir.exists()) {
                 File baseDir = new File(System.getProperty("java.io.tmpdir"));
                 tempDir = new File(baseDir, sessionId);
                 if (!tempDir.exists()) {

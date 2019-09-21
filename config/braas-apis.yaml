@@ -29,6 +29,12 @@ paths:
       operationId: get-base
       produces:
         - application/vnd.google-apps.spreadsheet
+      parameters:
+        - in: cookie
+          name: braas-session-id
+          schema:
+            type: string
+          required: true
       responses:
         200:
           description: OK
@@ -62,6 +68,11 @@ paths:
           type: file
           required: false
           description: A file with a json map containing every class and its associated schema used within rules. If you chose to omit this parameter you should mandatory provide a schema-json, as described above
+        - in: cookie
+          name: braas-session-id
+          schema:
+            type: string
+          required: true
       responses:
         201:
          description: Created
@@ -103,6 +114,11 @@ paths:
           type: file
           required: false
           description: A file with a json map containing every class and its associated schema used within rules.
+        - in: cookie
+          name: braas-session-id
+          schema:
+            type: string
+          required: true
       responses:
         201:
          description: Created
@@ -123,6 +139,12 @@ paths:
         - Rules base
       summary: Delete an existent rule's base
       description: Delete the rule's base previously uploaded. This method will fail if no rule's base was previously uploaded
+      parameters:
+        - in: cookie
+          name: braas-session-id
+          schema:
+            type: string
+          required: true
       responses:
         200:
           description: OK
@@ -146,6 +168,11 @@ paths:
           description: The set of assets to be executed. It could be a single object or an array of them.
           schema:
             type: object
+        - in: cookie
+          name: braas-session-id
+          schema:
+            type: string
+          required: true
       responses:
         202:
           description: Accepted

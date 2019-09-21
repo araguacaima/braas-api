@@ -3,19 +3,18 @@ package com.araguacaima.braas.api.routes;
 import com.araguacaima.braas.api.BeanBuilder;
 import com.araguacaima.braas.api.Server;
 import com.araguacaima.braas.api.common.Commons;
-import com.araguacaima.braas.api.jsonschema.FilesCompiler;
-import com.araguacaima.braas.api.jsonschema.PackageClass;
-import com.araguacaima.braas.api.jsonschema.RuleFactory;
+import com.araguacaima.braas.api.controller.ApiController;
 import com.araguacaima.braas.core.drools.DroolsConfig;
 import com.araguacaima.braas.core.drools.DroolsUtils;
-import com.araguacaima.commons.utils.*;
-import com.fasterxml.jackson.databind.exc.MismatchedInputException;
+import com.araguacaima.commons.utils.FileUtils;
+import com.araguacaima.commons.utils.JarUtils;
+import com.araguacaima.commons.utils.StringUtils;
+import com.araguacaima.commons.utils.ZipUtils;
 import com.github.victools.jsonschema.generator.Option;
 import com.google.common.collect.ImmutableList;
-import com.sun.codemodel.JCodeModel;
+import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.io.filefilter.SuffixFileFilter;
 import org.apache.commons.io.filefilter.TrueFileFilter;
-import org.jsonschema2pojo.*;
 import org.pac4j.sparkjava.SparkWebContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -52,81 +51,13 @@ public class Api implements RouteGroup {
     public static final String ZIP_MIME = "application/zip";
     public static final String CLASS_SUFFIX = "class";
     public static final String JSON_SUFFIX = "json";
-    public static final String DEFINITIONS_ROOT = "definitions";
-    private static final String JAR_NAME = "rules-model.jar";
     private static Logger log = LoggerFactory.getLogger(Api.class);
-    private static GenerationConfig config = new DefaultGenerationConfig() {
-
-        @Override
-        public boolean isUsePrimitives() {
-            return true;
-        }
-
-        @Override
-        public boolean isUseLongIntegers() {
-            return true;
-        }
-
-        @Override
-        public AnnotationStyle getAnnotationStyle() {
-            return AnnotationStyle.NONE;
-        }
-
-        @Override
-        public InclusionLevel getInclusionLevel() {
-            return InclusionLevel.ALWAYS;
-        }
-
-        @Override
-        public boolean isUseOptionalForGetters() {
-            return false;
-        }
-
-        @Override
-        public boolean isRemoveOldOutput() {
-            return true;
-        }
-
-        @Override
-        public boolean isSerializable() {
-            return true;
-        }
-
-        @Override
-        public boolean isIncludeConstructors() {
-            return true;
-        }
-
-        @Override
-        public boolean isIncludeAdditionalProperties() {
-            return false;
-        }
-
-        @Override
-        public String getTargetVersion() {
-            return "1.8";
-        }
-
-        @Override
-        public Language getTargetLanguage() {
-            return Language.JAVA;
-        }
-
-    };
-    private static NoopAnnotator noopAnnotator = new NoopAnnotator();
-    private static SchemaStore schemaStore = new SchemaStore();
-    private static SchemaGenerator schemaGenerator = new SchemaGenerator();
-    private static ClassLoaderUtils classLoaderUtils = new ClassLoaderUtils(Api.class.getClassLoader());
-
-    static {
-        classLoaderUtils.init();
-    }
 
     private ZipUtils zipUtils = new ZipUtils();
     private JarUtils jarUtils = new JarUtils();
+
     private Collection<Option> with = ImmutableList.of(Option.FLATTENED_ENUMS, Option.SIMPLIFIED_ENUMS, Option.DEFINITIONS_FOR_ALL_OBJECTS);
     private Collection<Option> without = null;
-    private FilesCompiler filesCompiler = new FilesCompiler(classLoaderUtils);
 
     @Override
     public void addRoutes() {
@@ -154,28 +85,11 @@ public class Api implements RouteGroup {
                 log.debug("Schema path '" + schemaPath + "' loaded!");
                 ctx.setSessionAttribute("rules-base-file-name", rulesPath);
                 schemaFile = new File(schemaPath);
-                if (schemaFile.exists()) {
-                    String packageName = (Objects.requireNonNull(getFileNameFromPart(request.raw().getPart(FILE_NAME_PREFIX)))).replaceAll("-", ".");
-                    Set<Class<?>> classes = new LinkedHashSet<>();
-                    if (schemaFile.isDirectory()) {
-                        Iterator<File> files = FileUtils.iterateFilesAndDirs(schemaFile, new SuffixFileFilter(JSON_SUFFIX), TrueFileFilter.INSTANCE);
-                        while (files.hasNext()) {
-                            File file = files.next();
-                            classes.addAll(processFile(file, packageName, sourceClassesDir, compiledClassesDir));
-                        }
-                    } else if (schemaFile.isFile()) {
-                        classes.addAll(processFile(schemaFile, packageName, sourceClassesDir, compiledClassesDir));
-                    }
-                    if (StringUtils.isNotBlank(rulesPath)) {
-                        DroolsConfig droolsConfig = (DroolsConfig) ctx.getSessionAttribute("drools-config");
-                        if (droolsConfig == null) {
-                            Properties props = new PropertiesHandler("drools-absolute-path-decision-table.properties", this.getClass().getClassLoader()).getProperties();
-                            props.setProperty("decision.table.path", rulesPath);
-                            droolsConfig = new DroolsConfig(props);
-                            droolsConfig.addClasses(classes);
-                            ctx.setSessionAttribute("drools-config", droolsConfig);
-                        }
-                    }
+                Set<Class<?>> classes = ApiController.buildClassesFromMultipartJsonSchema(
+                        schemaFile, getFileNameFromPart(request.raw().getPart(FILE_NAME_PREFIX)), sourceClassesDir, compiledClassesDir);
+                if (CollectionUtils.isNotEmpty(classes)) {
+                    ctx.setSessionAttribute("drools-config", ApiController.createDroolsConfig(
+                            rulesPath, classes, (DroolsConfig) ctx.getSessionAttribute("drools-config")));
                     response.status(HTTP_CREATED);
                 }
             } catch (Throwable ex) {
@@ -287,167 +201,4 @@ public class Api implements RouteGroup {
             return jsonUtils.toJSON(results);
         });
     }
-
-    private void jsonToSourceClassFile(String json, String className, String packageName, File rootDirectory) throws IOException, NoSuchFieldException, IllegalAccessException {
-        JCodeModel codeModel = new JCodeModel();
-        SchemaMapper mapper = new SchemaMapper(new RuleFactory(config, noopAnnotator, schemaStore, DEFINITIONS_ROOT), schemaGenerator);
-        mapper.generate(codeModel, className, packageName, json);
-        codeModel.build(rootDirectory);
-    }
-
-    public Set<Class<?>> compileSources(File sourceCodeDirectory, File compiledClassesDirectory) throws IOException, ClassNotFoundException {
-        Set<Class<?>> classes = filesCompiler.compile(sourceCodeDirectory, compiledClassesDirectory, org.apache.commons.io.FileUtils.listFiles(sourceCodeDirectory, new String[]{"java"}, true));
-        for (Class clazz : classes) {
-            classLoaderUtils.loadClass(clazz);
-        }
-        return classes;
-    }
-
-    private Map getLastValueFromPackageName(String key, Map parentMap) {
-        if (StringUtils.isBlank(key)) {
-            return parentMap;
-        }
-        String entry = key.split("\\.")[0];
-        Map map = (Map) parentMap.get(entry);
-        if (map == null) {
-            return null;
-        } else {
-            String remaining = key.substring(entry.length());
-            if (remaining.startsWith(".")) {
-                remaining = remaining.substring(1);
-            }
-            return getLastValueFromPackageName(remaining, map);
-        }
-    }
-
-    private LinkedHashMap<String, LinkedHashMap> createKeysFromPackageName(String key, LinkedHashMap<String, LinkedHashMap> parentMap) {
-        if (StringUtils.isBlank(key)) {
-            return new LinkedHashMap<>();
-        }
-        String entry = key.split("\\.")[0];
-        String remaining = key.replaceFirst(entry, StringUtils.EMPTY);
-        if (remaining.startsWith(".")) {
-            remaining = remaining.substring(1);
-        }
-        LinkedHashMap<String, LinkedHashMap> map = (LinkedHashMap<String, LinkedHashMap>) parentMap.get(entry);
-        if (map == null) {
-            map = new LinkedHashMap<>();
-            LinkedHashMap<String, LinkedHashMap> value = new LinkedHashMap<>();
-            map.put(entry, createKeysFromPackageName(remaining, value));
-        } else {
-            if (!key.equals(entry)) {
-                LinkedHashMap<String, LinkedHashMap> map1 = createKeysFromPackageName(remaining, map);
-                if (!map1.equals(map)) {
-                    if (!remaining.contains(".")) {
-                        map.putAll(map1);
-                        return parentMap;
-                    } else {
-                        map.put(entry, map1);
-                    }
-                } else {
-                    return parentMap;
-                }
-            } else {
-                return parentMap;
-            }
-        }
-        return map;
-    }
-
-    private Set<Class<?>> processFile(File file, String packageName, File sourceFilesDirectory, File compiledFilesDirectory) throws IOException, ClassNotFoundException, NoSuchFieldException, IllegalAccessException {
-        String json = FileUtils.readFileToString(file, Charset.forName("UTF-8"));
-        try {
-            Map<String, String> jsonSchema = jsonUtils.fromJSON(json, Map.class);
-            String id = jsonSchema.get("$id");
-            jsonToSourceClassFile(json, id, packageName, sourceFilesDirectory);
-        } catch (MismatchedInputException ignored) {
-            Collection<Map<String, Object>> jsonSchemas = jsonUtils.fromJSON(json, Collection.class);
-            Set<String> ids = new LinkedHashSet<>();
-            LinkedHashMap<String, LinkedHashMap> definitionMap = new LinkedHashMap<>();
-            jsonSchemas.forEach(jsonSchema -> {
-                try {
-                    String id = jsonSchema.get("$id").toString();
-                    String className_;
-                    String packageName_;
-                    if (id.contains(".")) {
-                        className_ = id.substring(id.lastIndexOf('.') + 1);
-                        packageName_ = id.substring(0, id.lastIndexOf('.'));
-                    } else {
-                        className_ = id;
-                        packageName_ = packageName;
-                    }
-                    LinkedHashMap<String, LinkedHashMap> map_ = createKeysFromPackageName(packageName_, definitionMap);
-                    Map innerMap = getLastValueFromPackageName(packageName_, map_);
-                    innerMap.put(className_, jsonSchema);
-                    jsonSchema.put("$id", id);
-                    jsonSchema.put("$schema", "http://json-schema.org/draft-07/schema#");
-                    ids.add(id);
-                    definitionMap.putAll(map_);
-
-                    //fixing $ref properties
-                    LinkedHashMap properties = (LinkedHashMap) jsonSchema.get("properties");
-                    if (MapUtils.isNotEmpty(properties)) {
-                        for (Object key : properties.keySet()) {
-                            LinkedHashMap value = (LinkedHashMap) properties.get(key);
-                            String innerId = (String) value.get("$id");
-                            if (StringUtils.isNotBlank(innerId) && innerId.contains(".")) {
-                                value.clear();
-                                value.put("$ref", "#/definitions/" + innerId.replaceAll("\\.", "/"));
-                                LinkedHashMap definitions = (LinkedHashMap) jsonSchema.get(DEFINITIONS_ROOT);
-                                if (definitions == null) {
-                                    definitions = new LinkedHashMap();
-                                    jsonSchema.put(DEFINITIONS_ROOT, definitions);
-                                }
-                                definitions.put(innerId, "");
-                            }
-                        }
-                    }
-                } catch (Throwable t) {
-                    t.printStackTrace();
-                }
-            });
-            definitionsToClasses(definitionMap, ids, sourceFilesDirectory);
-        }
-        return compileSources(sourceFilesDirectory, compiledFilesDirectory);
-    }
-
-    private void definitionsToClasses(LinkedHashMap<String, LinkedHashMap> definitions, Set<String> ids, File rootDirectory) throws IOException, NoSuchFieldException, IllegalAccessException {
-        FileUtils.cleanDirectory(rootDirectory);
-        for (String id : ids) {
-            Map map = getLastValueFromPackageName(id, definitions);
-            if (map != null) {
-                PackageClass packageClass = new PackageClass(id).invoke();
-                String className = packageClass.getClassName();
-                String packageName = packageClass.getPackageName();
-                LinkedHashMap result = new LinkedHashMap();
-                LinkedHashMap map1 = (LinkedHashMap) map.get(DEFINITIONS_ROOT);
-                if (map1 != null) {
-                    for (Object keyObj : map1.keySet()) {
-                        String key = keyObj.toString();
-                        Map value = getLastValueFromPackageName(key, definitions);
-                        if (value != null) {
-                            packageClass = new PackageClass(key).invoke();
-                            String className_ = packageClass.getClassName();
-                            String packageName_ = packageClass.getPackageName();
-                            LinkedHashMap<String, LinkedHashMap> map_ = createKeysFromPackageName(packageName_, result);
-                            value.remove("$id");
-                            value.remove("$schema");
-                            value.remove(DEFINITIONS_ROOT);
-                            Map value_ = getLastValueFromPackageName(key, map_);
-                            if (value_ == null) {
-                                value_ = getLastValueFromPackageName(packageName_, map_);
-                                value_.put(className_, value);
-                            } else {
-                                value_.putAll(value);
-                            }
-                            result.putAll(map_);
-                        }
-                    }
-                }
-                map.put(DEFINITIONS_ROOT, result);
-                jsonToSourceClassFile(jsonUtils.toJSON(map), StringUtils.capitalize(className), packageName, rootDirectory);
-            }
-        }
-    }
-
 }

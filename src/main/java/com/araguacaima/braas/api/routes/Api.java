@@ -156,14 +156,15 @@ public class Api implements RouteGroup {
                 schemaFile = new File(schemaPath);
                 if (schemaFile.exists()) {
                     String packageName = (Objects.requireNonNull(getFileNameFromPart(request.raw().getPart(FILE_NAME_PREFIX)))).replaceAll("-", ".");
+                    Set<Class<?>> classes = new LinkedHashSet<>();
                     if (schemaFile.isDirectory()) {
                         Iterator<File> files = FileUtils.iterateFilesAndDirs(schemaFile, new SuffixFileFilter(JSON_SUFFIX), TrueFileFilter.INSTANCE);
                         while (files.hasNext()) {
                             File file = files.next();
-                            processFile(file, packageName, sourceClassesDir, compiledClassesDir, JAR_NAME);
+                            classes.addAll(processFile(file, packageName, sourceClassesDir, compiledClassesDir));
                         }
                     } else if (schemaFile.isFile()) {
-                        processFile(schemaFile, packageName, sourceClassesDir, compiledClassesDir, JAR_NAME);
+                        classes.addAll(processFile(schemaFile, packageName, sourceClassesDir, compiledClassesDir));
                     }
                     if (StringUtils.isNotBlank(rulesPath)) {
                         DroolsConfig droolsConfig = (DroolsConfig) ctx.getSessionAttribute("drools-config");
@@ -171,6 +172,7 @@ public class Api implements RouteGroup {
                             Properties props = new PropertiesHandler("drools-absolute-path-decision-table.properties", this.getClass().getClassLoader()).getProperties();
                             props.setProperty("decision.table.path", rulesPath);
                             droolsConfig = new DroolsConfig(props);
+                            droolsConfig.addClasses(classes);
                             ctx.setSessionAttribute("drools-config", droolsConfig);
                         }
                     }
@@ -293,12 +295,12 @@ public class Api implements RouteGroup {
         codeModel.build(rootDirectory);
     }
 
-    public void compileSources(File sourceCodeDirectory, File compiledClassesDirectory) throws IOException, ClassNotFoundException {
-
+    public Set<Class<?>> compileSources(File sourceCodeDirectory, File compiledClassesDirectory) throws IOException, ClassNotFoundException {
         Set<Class<?>> classes = filesCompiler.compile(sourceCodeDirectory, compiledClassesDirectory, org.apache.commons.io.FileUtils.listFiles(sourceCodeDirectory, new String[]{"java"}, true));
         for (Class clazz : classes) {
             classLoaderUtils.loadClass(clazz);
         }
+        return classes;
     }
 
     private Map getLastValueFromPackageName(String key, Map parentMap) {
@@ -352,7 +354,7 @@ public class Api implements RouteGroup {
         return map;
     }
 
-    private void processFile(File file, String packageName, File sourceFilesDirectory, File compiledFilesDirectory, String jarName) throws IOException, ClassNotFoundException, NoSuchFieldException, IllegalAccessException {
+    private Set<Class<?>> processFile(File file, String packageName, File sourceFilesDirectory, File compiledFilesDirectory) throws IOException, ClassNotFoundException, NoSuchFieldException, IllegalAccessException {
         String json = FileUtils.readFileToString(file, Charset.forName("UTF-8"));
         try {
             Map<String, String> jsonSchema = jsonUtils.fromJSON(json, Map.class);
@@ -406,7 +408,7 @@ public class Api implements RouteGroup {
             });
             definitionsToClasses(definitionMap, ids, sourceFilesDirectory);
         }
-        compileSources(sourceFilesDirectory, compiledFilesDirectory);
+        return compileSources(sourceFilesDirectory, compiledFilesDirectory);
     }
 
     private void definitionsToClasses(LinkedHashMap<String, LinkedHashMap> definitions, Set<String> ids, File rootDirectory) throws IOException, NoSuchFieldException, IllegalAccessException {

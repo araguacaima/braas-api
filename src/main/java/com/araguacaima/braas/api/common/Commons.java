@@ -125,7 +125,11 @@ public class Commons {
             errorMap.put("title", "Error");
             errorMap.put("message", message);
             errorMap.put("stack", stackTrace);
-            response.body(render(errorMap, "error"));
+            try {
+                response.body(jsonUtils.toJSON(errorMap));
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
         }
     };
     //final static CallbackRoute callback = new CallbackRoute(config, null, true);

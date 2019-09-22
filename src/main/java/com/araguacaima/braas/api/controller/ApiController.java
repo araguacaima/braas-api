@@ -17,17 +17,18 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.net.MalformedURLException;
 import java.net.URISyntaxException;
+import java.net.URLClassLoader;
 import java.util.*;
 
 import static com.araguacaima.braas.api.common.Commons.JSON_SUFFIX;
 
 public class ApiController {
 
-    public static ClassLoader buildClassesFromMultipartJsonSchema_(File schemaFile, String fileNameFromPart, File sourceClassesDir, File compiledClassesDir) throws InternalBraaSException {
-        ClassLoader classLoader;
+    public static URLClassLoader buildClassesFromMultipartJsonSchema_(File schemaFile, String fileNameFromPart, File sourceClassesDir, File compiledClassesDir) throws InternalBraaSException {
+        URLClassLoader classLoader;
         try {
             classLoader = new DroolsURLClassLoader(compiledClassesDir.toURI().toURL(), KieBase.class.getClassLoader());
-            JsonSchemaUtils jsonSchemaUtils = new JsonSchemaUtils(classLoader);
+            JsonSchemaUtils<URLClassLoader> jsonSchemaUtils = new JsonSchemaUtils<>(classLoader);
             if (schemaFile.exists()) {
                 String packageName = (Objects.requireNonNull(fileNameFromPart)).replaceAll("-", ".");
                 if (schemaFile.isDirectory()) {
@@ -69,7 +70,7 @@ public class ApiController {
         return classes;
     }
 
-    public static DroolsConfig createDroolsConfig(String rulesPath, ClassLoader classLoader, DroolsConfig droolsConfig) throws InternalBraaSException {
+    public static DroolsConfig createDroolsConfig(String rulesPath, URLClassLoader classLoader, DroolsConfig droolsConfig) throws InternalBraaSException {
         try {
             if (StringUtils.isNotBlank(rulesPath)) {
                 if (droolsConfig == null) {
@@ -86,7 +87,7 @@ public class ApiController {
         }
         return droolsConfig;
     }
-
+/*
     public static DroolsConfig createDroolsConfig(String rulesPath, Set<Class<?>> classes, DroolsConfig droolsConfig) throws InternalBraaSException {
         try {
             if (StringUtils.isNotBlank(rulesPath)) {
@@ -101,5 +102,5 @@ public class ApiController {
             throw new InternalBraaSException(e);
         }
         return droolsConfig;
-    }
+    }*/
 }

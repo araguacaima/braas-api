@@ -24,6 +24,7 @@ import javax.servlet.ServletException;
 import javax.servlet.http.Part;
 import java.io.File;
 import java.io.IOException;
+import java.net.URLClassLoader;
 import java.nio.charset.Charset;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -85,7 +86,7 @@ public class Api implements RouteGroup {
                     return Commons.throwError(response, HTTP_CONFLICT, new Exception("Json schema is not present on request. Make sure you provide it according to API specification [http://braaservice.com/api#/Rules_base/add_base]", t));
                 }
                 File schemaFile = new File(schemaPath);
-                ClassLoader classLoader = ApiController.buildClassesFromMultipartJsonSchema_(
+                URLClassLoader classLoader = ApiController.buildClassesFromMultipartJsonSchema_(
                         schemaFile, getFileNameFromPart(request.raw().getPart(FILE_NAME_PREFIX)), sourceClassesDir, compiledClassesDir);
                 if (classLoader != null) {
                     ctx.setSessionAttribute("drools-config", ApiController.createDroolsConfig(
@@ -216,7 +217,7 @@ public class Api implements RouteGroup {
                     return Commons.throwError(response, HTTP_CONFLICT, new Exception("Json schema is not present on request. Make sure you provide it according to API specification [http://braaservice.com/api#/Rules_base/add_base]", t));
                 }
                 File schemaFile = new File(schemaPath);
-                ClassLoader classLoader = ApiController.buildClassesFromMultipartJsonSchema_(
+                URLClassLoader classLoader = ApiController.buildClassesFromMultipartJsonSchema_(
                         schemaFile, getFileNameFromPart(request.raw().getPart(FILE_NAME_PREFIX)), sourceClassesDir, compiledClassesDir);
                 if (classLoader != null) {
                     droolsConfig = ApiController.createDroolsConfig(rulesPath, classLoader, (DroolsConfig) ctx.getSessionAttribute("drools-config"));

@@ -1,12 +1,16 @@
 package com.araguacaima.braas.api.jsonschema;
 
+import com.araguacaima.braas.core.drools.ReloadableClassLoader;
 import org.joor.Reflect;
 import org.joor.ReflectException;
 
 import javax.tools.*;
 import java.io.*;
 import java.lang.invoke.MethodHandles;
-import java.net.*;
+import java.net.URI;
+import java.net.URISyntaxException;
+import java.net.URL;
+import java.net.URLClassLoader;
 import java.nio.charset.Charset;
 import java.util.*;
 
@@ -189,42 +193,6 @@ public class FilesCompiler {
         @Override
         public CharSequence getCharContent(boolean ignoreEncodingErrors) {
             return content;
-        }
-    }
-
-    private static final class ReloadableClassLoader extends ClassLoader {
-
-        ReloadableClassLoader(ClassLoader parent) {
-            super(parent);
-        }
-
-        Class loadClass(String name, URL myUrl) {
-
-            try {
-                URLConnection connection = myUrl.openConnection();
-                InputStream input = connection.getInputStream();
-                ByteArrayOutputStream buffer = new ByteArrayOutputStream();
-                int data = input.read();
-
-                while (data != -1) {
-                    buffer.write(data);
-                    data = input.read();
-                }
-
-                input.close();
-
-                byte[] classData = buffer.toByteArray();
-
-                return defineClass(name, classData, 0, classData.length);
-
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
-            return null;
-        }
-
-        Class loadClass(String name, byte[] classData) {
-            return defineClass(name, classData, 0, classData.length);
         }
     }
 

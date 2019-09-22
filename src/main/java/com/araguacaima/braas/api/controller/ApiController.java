@@ -1,8 +1,8 @@
 package com.araguacaima.braas.api.controller;
 
 import com.araguacaima.braas.api.exception.InternalBraaSException;
-import com.araguacaima.braas.core.drools.BraasClassLoader;
 import com.araguacaima.braas.core.drools.DroolsConfig;
+import com.araguacaima.braas.core.drools.DroolsURLClassLoader;
 import com.araguacaima.commons.exception.core.PropertiesUtilException;
 import com.araguacaima.commons.utils.FileUtils;
 import com.araguacaima.commons.utils.JsonSchemaUtils;
@@ -26,7 +26,7 @@ public class ApiController {
     public static ClassLoader buildClassesFromMultipartJsonSchema_(File schemaFile, String fileNameFromPart, File sourceClassesDir, File compiledClassesDir) throws InternalBraaSException {
         ClassLoader classLoader;
         try {
-            classLoader = new BraasClassLoader(compiledClassesDir.toURI().toURL(), KieBase.class.getClassLoader());
+            classLoader = new DroolsURLClassLoader(compiledClassesDir.toURI().toURL(), KieBase.class.getClassLoader());
             JsonSchemaUtils jsonSchemaUtils = new JsonSchemaUtils(classLoader);
             if (schemaFile.exists()) {
                 String packageName = (Objects.requireNonNull(fileNameFromPart)).replaceAll("-", ".");
@@ -49,7 +49,7 @@ public class ApiController {
     public static Set<Class<?>> buildClassesFromMultipartJsonSchema(File schemaFile, String fileNameFromPart, File sourceClassesDir, File compiledClassesDir) throws InternalBraaSException {
         Set<Class<?>> classes = null;
         try {
-            JsonSchemaUtils jsonSchemaUtils = new JsonSchemaUtils(new BraasClassLoader(compiledClassesDir.toURI().toURL(), KieBase.class.getClassLoader()));
+            JsonSchemaUtils jsonSchemaUtils = new JsonSchemaUtils(new DroolsURLClassLoader(compiledClassesDir.toURI().toURL(), KieBase.class.getClassLoader()));
             if (schemaFile.exists()) {
                 classes = new LinkedHashSet<>();
                 String packageName = (Objects.requireNonNull(fileNameFromPart)).replaceAll("-", ".");

@@ -43,6 +43,7 @@ import java.io.StringBufferInputStream;
 import java.net.URISyntaxException;
 import java.net.URL;
 import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -478,7 +479,7 @@ public class Commons {
         HttpServletRequest raw = request.raw();
         raw.setAttribute("org.eclipse.jetty.multipartConfig", multipartConfigElement);
         Part part = raw.getPart(partName);
-        return IOUtils.toString(part.getInputStream(), Charset.forName("UTF-8"));
+        return IOUtils.toString(part.getInputStream(), StandardCharsets.UTF_8);
     }
 
     public static String storeFileAndGetPathFromMultipart(Request request, String partName, File directory) throws IOException, ServletException {

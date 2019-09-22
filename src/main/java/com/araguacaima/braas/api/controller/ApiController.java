@@ -87,20 +87,4 @@ public class ApiController {
         }
         return droolsConfig;
     }
-/*
-    public static DroolsConfig createDroolsConfig(String rulesPath, Set<Class<?>> classes, DroolsConfig droolsConfig) throws InternalBraaSException {
-        try {
-            if (StringUtils.isNotBlank(rulesPath)) {
-                if (droolsConfig == null) {
-                    Properties props = new PropertiesHandler("drools-absolute-path-decision-table.properties", ApiController.class.getClassLoader()).getProperties();
-                    props.setProperty("decision.table.path", rulesPath);
-                    droolsConfig = new DroolsConfig(props);
-                    droolsConfig.addClasses(classes);
-                }
-            }
-        } catch (FileNotFoundException | MalformedURLException | URISyntaxException | PropertiesUtilException e) {
-            throw new InternalBraaSException(e);
-        }
-        return droolsConfig;
-    }*/
 }

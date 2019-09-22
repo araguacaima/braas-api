@@ -10,6 +10,10 @@ import com.araguacaima.commons.utils.FileUtils;
 import com.araguacaima.commons.utils.JarUtils;
 import com.araguacaima.commons.utils.StringUtils;
 import com.araguacaima.commons.utils.ZipUtils;
+import com.fasterxml.jackson.databind.DeserializationFeature;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.exc.MismatchedInputException;
+import com.fasterxml.jackson.databind.exc.UnrecognizedPropertyException;
 import com.github.victools.jsonschema.generator.Option;
 import com.google.common.collect.ImmutableList;
 import org.apache.commons.io.filefilter.SuffixFileFilter;
@@ -25,14 +29,11 @@ import javax.servlet.http.Part;
 import java.io.File;
 import java.io.IOException;
 import java.net.URLClassLoader;
-import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.Map;
+import java.util.*;
 
 import static com.araguacaima.braas.api.Server.engine;
 import static com.araguacaima.braas.api.common.Commons.*;
@@ -74,13 +75,13 @@ public class Api implements RouteGroup {
                 File compiledClassesDir = spreadsheetBaseModel.getCompiledClassesDir();
                 String rulesPath;
                 try {
-                    rulesPath = processSpreadSheet(request, rulesDir);
+                    rulesPath = extractSpreadSheet(request, rulesDir);
                 } catch (Throwable t) {
                     return Commons.throwError(response, HTTP_CONFLICT, new Exception("Rule base spreadsheet is not present on request. Make sure you provide it according to API specification [http://braaservice.com/api#/Rules_base/add_base]", t));
                 }
                 String schemaPath;
                 try {
-                    schemaPath = processSchema(request, rulesDir);
+                    schemaPath = extractSchema(request, rulesDir);
                     ctx.setSessionAttribute("rules-base-file-name", rulesPath);
                 } catch (Throwable t) {
                     return Commons.throwError(response, HTTP_CONFLICT, new Exception("Json schema is not present on request. Make sure you provide it according to API specification [http://braaservice.com/api#/Rules_base/add_base]", t));
@@ -201,23 +202,24 @@ public class Api implements RouteGroup {
             String rulesPath = null;
             DroolsConfig droolsConfig = null;
             try {
-                rulesPath = processSpreadSheet(request, rulesDir);
+                rulesPath = extractSpreadSheet(request, rulesDir);
             } catch (Throwable t) {
                 droolsConfig = (DroolsConfig) ctx.getSessionAttribute("drools-config");
                 if (droolsConfig == null) {
                     return Commons.throwError(response, 424, new Exception("Rule base spreadsheet is not present on request not previously provided. Make sure you provide it according to API specification [http://braaservice.com/api#/Rules_base/add_base]", t));
                 }
             }
+            URLClassLoader classLoader = null;
             if (droolsConfig == null && StringUtils.isNotBlank(rulesPath)) {
                 String schemaPath;
                 try {
-                    schemaPath = processSchema(request, rulesDir);
+                    schemaPath = extractSchema(request, rulesDir);
                     ctx.setSessionAttribute("rules-base-file-name", rulesPath);
                 } catch (Throwable t) {
                     return Commons.throwError(response, HTTP_CONFLICT, new Exception("Json schema is not present on request. Make sure you provide it according to API specification [http://braaservice.com/api#/Rules_base/add_base]", t));
                 }
                 File schemaFile = new File(schemaPath);
-                URLClassLoader classLoader = ApiController.buildClassesFromMultipartJsonSchema_(
+                classLoader = ApiController.buildClassesFromMultipartJsonSchema_(
                         schemaFile, getFileNameFromPart(request.raw().getPart(FILE_NAME_PREFIX)), sourceClassesDir, compiledClassesDir);
                 if (classLoader != null) {
                     droolsConfig = ApiController.createDroolsConfig(rulesPath, classLoader, (DroolsConfig) ctx.getSessionAttribute("drools-config"));
@@ -226,10 +228,10 @@ public class Api implements RouteGroup {
                     return Commons.throwError(response, HTTP_INTERNAL_ERROR, new Exception("It was not possible to load your provided schema to be used later in your rule's base"));
                 }
             }
-            if (droolsConfig != null) {
+            if (droolsConfig != null && classLoader != null) {
                 DroolsUtils droolsUtils = new DroolsUtils(droolsConfig);
-                Object assets = processAssets(request);
-                Collection results = droolsUtils.executeRules(assets);
+                Object assets = extractAssets(request, classLoader);
+                Collection<Object> results = droolsUtils.executeRules(assets);
                 response.status(HTTP_ACCEPTED);
                 response.type(JSON_CONTENT_TYPE);
                 return jsonUtils.toJSON(results);
@@ -238,28 +240,53 @@ public class Api implements RouteGroup {
         });
     }
 
-    private Object processAssets(Request request) throws IOException {
+    private Object extractAssets(Request request, URLClassLoader classLoader) throws NoSuchFieldException, IllegalAccessException, IOException {
         String assetsStr;
         try {
             assetsStr = getStringFromMultipart(request, "assets-file");
         } catch (Throwable ignored) {
             assetsStr = request.body();
         }
-        Object json;
+        Object json = null;
+        Class[] classes = com.araguacaima.braas.core.Commons.getClassesFromClassLoader(classLoader);
+        ObjectMapper mapper = new ObjectMapper();
+        mapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true);
         try {
-            json = jsonUtils.fromJSON(assetsStr, Map.class);
-        } catch (Throwable ignored) {
             json = jsonUtils.fromJSON(assetsStr, Collection.class);
+            Collection<Object> col = new LinkedList<>();
+            Collection<Map<String, Object>> jsonCollection = (Collection<Map<String, Object>>) json;
+            for (Map<String, Object> element : jsonCollection) {
+                String element_ = jsonUtils.toJSON(element);
+                for (Class<?> clazz : classes) {
+                    try {
+                        Object t = jsonUtils.fromJSON(mapper, element_, clazz);
+                        col.add(t);
+                        break;
+                    } catch (Throwable ignored1) {
+                    }
+                }
+            }
+            json = col;
+        } catch (MismatchedInputException ignored) {
+            for (Class<?> clazz : classes) {
+                try {
+                    json = jsonUtils.fromJSON(mapper, assetsStr, clazz);
+                    break;
+                } catch (UnrecognizedPropertyException ignored1) {
+                    ignored1.printStackTrace();
+                    log.error(ignored1.getMessage());
+                }
+            }
         }
         return json;
     }
 
-    private String processSchema(Request request, File rulesDir) throws IOException, ServletException {
+    private String extractSchema(Request request, File rulesDir) throws IOException, ServletException {
         String schemaPath;
         try {
             String schema = getStringFromMultipart(request, "schema-json");
             File file = new File(rulesDir, "json-schema.json");
-            FileUtils.writeStringToFile(file, schema, Charset.forName("UTF-8"));
+            FileUtils.writeStringToFile(file, schema, StandardCharsets.UTF_8);
             schemaPath = file.getCanonicalPath();
         } catch (Throwable ignored) {
             schemaPath = storeFileAndGetPathFromMultipart(request, "schema-file", rulesDir);
@@ -268,7 +295,7 @@ public class Api implements RouteGroup {
         return schemaPath;
     }
 
-    private String processSpreadSheet(Request request, File rulesDir) throws IOException, ServletException {
+    private String extractSpreadSheet(Request request, File rulesDir) throws IOException, ServletException {
         String rulesPath = storeFileAndGetPathFromMultipart(request, FILE_NAME_PREFIX, rulesDir);
         log.debug("Rule's base '" + rulesPath + "' loaded!");
         return rulesPath;

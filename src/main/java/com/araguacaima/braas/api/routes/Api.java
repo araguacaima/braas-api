@@ -17,8 +17,10 @@ import org.apache.commons.io.filefilter.TrueFileFilter;
 import org.pac4j.sparkjava.SparkWebContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import spark.Request;
 import spark.RouteGroup;
 
+import javax.servlet.ServletException;
 import javax.servlet.http.Part;
 import java.io.File;
 import java.io.IOException;
@@ -69,24 +71,24 @@ public class Api implements RouteGroup {
         post(BASE, (request, response) -> {
             try {
                 final SparkWebContext ctx = new SparkWebContext(request, response);
-                File rulesDir = (File) ctx.getSessionAttribute(Server.RULES_DIR_PARAM);
-                File sourceClassesDir = (File) ctx.getSessionAttribute(Server.SOURCE_CLASSES_DIR_PARAM);
-                File compiledClassesDir = (File) ctx.getSessionAttribute(Server.COMPILED_CLASSES_DIR_PARAM);
-                String rulesPath = storeFileAndGetPathFromMultipart(request, FILE_NAME_PREFIX, rulesDir);
-                log.debug("Rule's base '" + rulesPath + "' loaded!");
-                String schemaPath;
-                File schemaFile;
+                SpreadsheetBaseModel spreadsheetBaseModel = new SpreadsheetBaseModel(ctx).invoke();
+                File rulesDir = spreadsheetBaseModel.getRulesDir();
+                File sourceClassesDir = spreadsheetBaseModel.getSourceClassesDir();
+                File compiledClassesDir = spreadsheetBaseModel.getCompiledClassesDir();
+                String rulesPath;
                 try {
-                    String schema = getStringFromMultipart(request, "schema-json");
-                    File file = new File(rulesDir, "schema-json.json");
-                    FileUtils.writeStringToFile(file, schema, Charset.forName("UTF-8"));
-                    schemaPath = file.getCanonicalPath();
-                } catch (Throwable ignored) {
-                    schemaPath = storeFileAndGetPathFromMultipart(request, "schema-file", rulesDir);
+                    rulesPath = processSpreadSheet(request, rulesDir);
+                } catch (Throwable t) {
+                    return Commons.throwError(response, HTTP_CONFLICT, new Exception("Rule base spreadsheet is not present on request. Make sure you provide it according to API specification [http://braaservice.com/api#/Rules_base/add_base]", t));
                 }
-                log.debug("Schema path '" + schemaPath + "' loaded!");
-                ctx.setSessionAttribute("rules-base-file-name", rulesPath);
-                schemaFile = new File(schemaPath);
+                String schemaPath;
+                try {
+                    schemaPath = processSchema(request, rulesDir);
+                    ctx.setSessionAttribute("rules-base-file-name", rulesPath);
+                } catch (Throwable t) {
+                    return Commons.throwError(response, HTTP_CONFLICT, new Exception("Json schema is not present on request. Make sure you provide it according to API specification [http://braaservice.com/api#/Rules_base/add_base]", t));
+                }
+                File schemaFile = new File(schemaPath);
                 ClassLoader classLoader = ApiController.buildClassesFromMultipartJsonSchema_(
                         schemaFile, getFileNameFromPart(request.raw().getPart(FILE_NAME_PREFIX)), sourceClassesDir, compiledClassesDir);
                 if (classLoader != null) {
@@ -94,7 +96,7 @@ public class Api implements RouteGroup {
                             rulesPath, classLoader, (DroolsConfig) ctx.getSessionAttribute("drools-config")));
                     response.status(HTTP_CREATED);
                 } else {
-                    response.status(HTTP_INTERNAL_ERROR);
+                    return Commons.throwError(response, HTTP_INTERNAL_ERROR, new Exception("It was not possible to load your provided schema to be used later in your rule's base"));
                 }
             } catch (Throwable ex) {
                 ex.printStackTrace();
@@ -195,14 +197,113 @@ public class Api implements RouteGroup {
         });
         post(ASSETS, (request, response) -> {
             final SparkWebContext ctx = new SparkWebContext(request, response);
-            DroolsConfig droolsConfig = (DroolsConfig) ctx.getSessionAttribute("drools-config");
-            DroolsUtils droolsUtils = new DroolsUtils(droolsConfig);
-            String assetsStr = request.body();
-            Map assets = jsonUtils.fromJSON(assetsStr, Map.class);
-            Collection results = droolsUtils.executeRules(assets);
-            response.status(HTTP_ACCEPTED);
-            response.type(JSON_CONTENT_TYPE);
-            return jsonUtils.toJSON(results);
+            SpreadsheetBaseModel spreadsheetBaseModel = new SpreadsheetBaseModel(ctx).invoke();
+            File rulesDir = spreadsheetBaseModel.getRulesDir();
+            File sourceClassesDir = spreadsheetBaseModel.getSourceClassesDir();
+            File compiledClassesDir = spreadsheetBaseModel.getCompiledClassesDir();
+            String rulesPath = null;
+            DroolsConfig droolsConfig = null;
+            try {
+                rulesPath = processSpreadSheet(request, rulesDir);
+            } catch (Throwable t) {
+                droolsConfig = (DroolsConfig) ctx.getSessionAttribute("drools-config");
+                if (droolsConfig == null) {
+                    return Commons.throwError(response, 424, new Exception("Rule base spreadsheet is not present on request not previously provided. Make sure you provide it according to API specification [http://braaservice.com/api#/Rules_base/add_base]", t));
+                }
+            }
+            if (droolsConfig == null && StringUtils.isNotBlank(rulesPath)) {
+                String schemaPath;
+                try {
+                    schemaPath = processSchema(request, rulesDir);
+                    ctx.setSessionAttribute("rules-base-file-name", rulesPath);
+                } catch (Throwable t) {
+                    return Commons.throwError(response, HTTP_CONFLICT, new Exception("Json schema is not present on request. Make sure you provide it according to API specification [http://braaservice.com/api#/Rules_base/add_base]", t));
+                }
+                File schemaFile = new File(schemaPath);
+                ClassLoader classLoader = ApiController.buildClassesFromMultipartJsonSchema_(
+                        schemaFile, getFileNameFromPart(request.raw().getPart(FILE_NAME_PREFIX)), sourceClassesDir, compiledClassesDir);
+                if (classLoader != null) {
+                    droolsConfig = ApiController.createDroolsConfig(rulesPath, classLoader, (DroolsConfig) ctx.getSessionAttribute("drools-config"));
+                    ctx.setSessionAttribute("drools-config", droolsConfig);
+                } else {
+                    return Commons.throwError(response, HTTP_INTERNAL_ERROR, new Exception("It was not possible to load your provided schema to be used later in your rule's base"));
+                }
+            }
+            if (droolsConfig != null) {
+                DroolsUtils droolsUtils = new DroolsUtils(droolsConfig);
+                Object assets = processAssets(request);
+                Collection results = droolsUtils.executeRules(assets);
+                response.status(HTTP_ACCEPTED);
+                response.type(JSON_CONTENT_TYPE);
+                return jsonUtils.toJSON(results);
+            }
+            return Commons.throwError(response, HTTP_INTERNAL_ERROR, new Exception("It was not possible to load your provided schema to be used later in your rule's base"));
         });
+    }
+
+    private Object processAssets(Request request) throws IOException {
+        String assetsStr;
+        try {
+            assetsStr = getStringFromMultipart(request, "assets-file");
+        } catch (Throwable ignored) {
+            assetsStr = request.body();
+        }
+        Object json;
+        try {
+            json = jsonUtils.fromJSON(assetsStr, Map.class);
+        } catch (Throwable ignored) {
+            json = jsonUtils.fromJSON(assetsStr, Collection.class);
+        }
+        return json;
+    }
+
+    private String processSchema(Request request, File rulesDir) throws IOException, ServletException {
+        String schemaPath;
+        try {
+            String schema = getStringFromMultipart(request, "schema-json");
+            File file = new File(rulesDir, "json-schema.json");
+            FileUtils.writeStringToFile(file, schema, Charset.forName("UTF-8"));
+            schemaPath = file.getCanonicalPath();
+        } catch (Throwable ignored) {
+            schemaPath = storeFileAndGetPathFromMultipart(request, "schema-file", rulesDir);
+        }
+        log.debug("Schema path '" + schemaPath + "' loaded!");
+        return schemaPath;
+    }
+
+    private String processSpreadSheet(Request request, File rulesDir) throws IOException, ServletException {
+        String rulesPath = storeFileAndGetPathFromMultipart(request, FILE_NAME_PREFIX, rulesDir);
+        log.debug("Rule's base '" + rulesPath + "' loaded!");
+        return rulesPath;
+    }
+
+    private class SpreadsheetBaseModel {
+        private SparkWebContext ctx;
+        private File rulesDir;
+        private File sourceClassesDir;
+        private File compiledClassesDir;
+
+        public SpreadsheetBaseModel(SparkWebContext ctx) {
+            this.ctx = ctx;
+        }
+
+        public File getRulesDir() {
+            return rulesDir;
+        }
+
+        public File getSourceClassesDir() {
+            return sourceClassesDir;
+        }
+
+        public File getCompiledClassesDir() {
+            return compiledClassesDir;
+        }
+
+        public SpreadsheetBaseModel invoke() {
+            rulesDir = (File) ctx.getSessionAttribute(Server.RULES_DIR_PARAM);
+            sourceClassesDir = (File) ctx.getSessionAttribute(Server.SOURCE_CLASSES_DIR_PARAM);
+            compiledClassesDir = (File) ctx.getSessionAttribute(Server.COMPILED_CLASSES_DIR_PARAM);
+            return this;
+        }
     }
 }

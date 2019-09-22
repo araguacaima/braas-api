@@ -53,11 +53,11 @@ paths:
           type: file
           description: The spreadsheet on which the rules resides
           x-mimetype: application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.google-apps.spreadsheet
-        - in: formData
-          name: schema-json
-          type: string
-          required: false
-          description: A json map containing every class and its associated schema used within rules. If you chose to omit this parameter you should mandatory provide a schema-file, as described bellow
+        #- in: formData
+        #  name: schema-json
+        #  type: string
+        #  required: false
+        #  description: A json map containing every class and its associated schema used within rules. If you chose to omit this parameter you should mandatory provide a schema-file, as described bellow
         - in: formData
           name: schema-file
           type: file
@@ -143,13 +143,35 @@ paths:
       description: By taking the incoming assets, this method executes the rule engine and return whatever such rules have programmed to return. This method will fail too for any non-authorized user or if no rule's base is previously provided.
       operationId: execute-assets
       consumes:
+        - multipart/form-data
         - application/json
+        - application/x-www-form-urlencoded
       parameters:
         - in: body
           name: assets
           description: The set of assets to be executed. It could be a single object or an array of them.
           schema:
             type: object
+        - in: formData
+          name: spreadsheet
+          type: file
+          description: The spreadsheet on which the rules resides
+          x-mimetype: application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.google-apps.spreadsheet
+        #- in: formData
+        #  name: schema-json
+        #  type: string
+        #  required: false
+        #  description: A json map containing every class and its associated schema used within rules. If you chose to omit this parameter you should mandatory provide a schema-file, as described bellow
+        - in: formData
+          name: schema-file
+          type: file
+          required: false
+          description: A file with a json map containing every class and its associated schema used within rules. If you chose to omit this parameter you should mandatory provide a schema-json, as described above
+        - in: formData
+          name: assets-file
+          type: file
+          required: false
+          description: A file containing every assets to be executed. It could be a single object or an array of them.  If you chose to omit this parameter you should mandatory provide an assets parameter, as described above
       responses:
         202:
           description: Accepted

@@ -149,13 +149,13 @@ paths:
       parameters:
         - in: body
           name: assets
-          description: The set of assets to be executed. It could be a single object or an array of them.
+          description: The set of assets to be executed. It could be a single object or an array of them. If you chose to omit this parameter you should mandatory provide an assets-file parameter, as described below
           schema:
             type: object
         - in: formData
           name: spreadsheet
           type: file
-          description: The spreadsheet on which the rules resides
+          description: The spreadsheet on which the rules resides. If you have already provided the rules base on the current session, you don't need to provide it on every call of this method. This parameter is a convenience way to execute rules in one shot, but it's also possible to provide the rule base once, thru method add-rule described above, and only assests on subsequent invocations.
           x-mimetype: application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.google-apps.spreadsheet
         #- in: formData
         #  name: schema-json

@@ -46,15 +46,11 @@ public class Api implements RouteGroup {
     public static final String JSON_SCHEMA = "/json-schema";
     public static final String ASSETS = "/assets";
     public static final String API = "Api";
-    public static final String FILE_NAME_PREFIX = "spreadsheet";
-    public static final String ZIP_PART_NAME = "zip";
-    public static final String JAR_PART_NAME = "jar";
     public static final String ZIP_COMPRESSED_MIME = "application/x-zip-compressed";
     public static final String JAR_MIME = "application/java-archive";
     public static final String OCTET_STREAM_MIME = "application/octet-stream";
     public static final String ZIP_MIME = "application/zip";
-    public static final String CLASS_SUFFIX = "class";
-    public static final String JSON_SUFFIX = "json";
+
     private static Logger log = LoggerFactory.getLogger(Api.class);
 
     private ZipUtils zipUtils = new ZipUtils();

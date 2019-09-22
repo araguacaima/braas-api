@@ -101,6 +101,11 @@ public class Commons {
     public static final String BREAK_REMAINING_SPECIFICATIONS = "BreakRemainingSpecifications";
     public static final String STORED_RANKS = "STORED_RANKS";
     public static final String BREADCRUMBS_SEPARATOR = " | ";
+    public static final String FILE_NAME_PREFIX = "spreadsheet";
+    public static final String ZIP_PART_NAME = "zip";
+    public static final String JAR_PART_NAME = "jar";
+    public static final String CLASS_SUFFIX = "class";
+    public static final String JSON_SUFFIX = "json";
     public static final ReflectionUtils reflectionUtils = new ReflectionUtils(null);
     final static Config config = new ConfigFactory(JWT_SALT, engine).build(deployedServer, DEFAULT_PATH, clients);
     private static Logger log = LoggerFactory.getLogger(Commons.class);

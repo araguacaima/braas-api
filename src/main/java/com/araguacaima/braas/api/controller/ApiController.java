@@ -1,6 +1,7 @@
 package com.araguacaima.braas.api.controller;
 
 import com.araguacaima.braas.api.exception.InternalBraaSException;
+import com.araguacaima.braas.core.drools.BraasClassLoader;
 import com.araguacaima.braas.core.drools.DroolsConfig;
 import com.araguacaima.commons.exception.core.PropertiesUtilException;
 import com.araguacaima.commons.utils.FileUtils;
@@ -9,6 +10,7 @@ import com.araguacaima.commons.utils.PropertiesHandler;
 import com.araguacaima.commons.utils.StringUtils;
 import org.apache.commons.io.filefilter.SuffixFileFilter;
 import org.apache.commons.io.filefilter.TrueFileFilter;
+import org.kie.api.KieBase;
 
 import java.io.File;
 import java.io.FileNotFoundException;
@@ -17,14 +19,15 @@ import java.net.MalformedURLException;
 import java.net.URISyntaxException;
 import java.util.*;
 
-import static com.araguacaima.braas.api.routes.Api.JSON_SUFFIX;
+import static com.araguacaima.braas.api.common.Commons.JSON_SUFFIX;
 
 public class ApiController {
 
     public static ClassLoader buildClassesFromMultipartJsonSchema_(File schemaFile, String fileNameFromPart, File sourceClassesDir, File compiledClassesDir) throws InternalBraaSException {
-        ClassLoader classLoader = null;
+        ClassLoader classLoader;
         try {
-            JsonSchemaUtils jsonSchemaUtils = new JsonSchemaUtils();
+            classLoader = new BraasClassLoader(compiledClassesDir.toURI().toURL(), KieBase.class.getClassLoader());
+            JsonSchemaUtils jsonSchemaUtils = new JsonSchemaUtils(classLoader);
             if (schemaFile.exists()) {
                 String packageName = (Objects.requireNonNull(fileNameFromPart)).replaceAll("-", ".");
                 if (schemaFile.isDirectory()) {
@@ -46,7 +49,7 @@ public class ApiController {
     public static Set<Class<?>> buildClassesFromMultipartJsonSchema(File schemaFile, String fileNameFromPart, File sourceClassesDir, File compiledClassesDir) throws InternalBraaSException {
         Set<Class<?>> classes = null;
         try {
-            JsonSchemaUtils jsonSchemaUtils = new JsonSchemaUtils();
+            JsonSchemaUtils jsonSchemaUtils = new JsonSchemaUtils(new BraasClassLoader(compiledClassesDir.toURI().toURL(), KieBase.class.getClassLoader()));
             if (schemaFile.exists()) {
                 classes = new LinkedHashSet<>();
                 String packageName = (Objects.requireNonNull(fileNameFromPart)).replaceAll("-", ".");

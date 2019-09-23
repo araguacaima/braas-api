@@ -84,16 +84,12 @@ public class ApiController {
 
     public static DroolsConfig createDroolsConfig(String rulesPath, URLClassLoader classLoader, DroolsConfig droolsConfig) throws InternalBraaSException {
         try {
-            if (StringUtils.isNotBlank(rulesPath)) {
-                if (droolsConfig == null) {
-                    Properties props = new PropertiesHandler("drools-absolute-path-decision-table.properties", ApiController.class.getClassLoader()).getProperties();
-                    props.setProperty("decision.table.path", rulesPath);
-                    droolsConfig = new DroolsConfig(props);
-                    droolsConfig.setClassLoader(classLoader);
-                }
-            } else {
-                droolsConfig.setClassLoader(classLoader);
+            if (StringUtils.isNotBlank(rulesPath) && droolsConfig == null) {
+                Properties props = new PropertiesHandler("drools-absolute-path-decision-table.properties", ApiController.class.getClassLoader()).getProperties();
+                props.setProperty("decision.table.path", rulesPath);
+                droolsConfig = new DroolsConfig(props);
             }
+            droolsConfig.setClassLoader(classLoader);
         } catch (FileNotFoundException | MalformedURLException | URISyntaxException | PropertiesUtilException e) {
             throw new InternalBraaSException(e);
         }

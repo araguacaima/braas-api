@@ -85,7 +85,6 @@ public class Api implements RouteGroup {
                 if (classLoader != null) {
                     ctx.setSessionAttribute("drools-config", ApiController.createDroolsConfig(
                             rulesPath, classLoader, (DroolsConfig) ctx.getSessionAttribute("drools-config")));
-                    ctx.setSessionAttribute("classloader", classLoader);
                     response.status(HTTP_CREATED);
                 } else {
                     return Commons.throwError(response, HTTP_INTERNAL_ERROR, new Exception("It was not possible to load your provided schema to be used later in your rule's base"));
@@ -211,7 +210,7 @@ public class Api implements RouteGroup {
                     return Commons.throwError(response, 424, new Exception("Rule base spreadsheet is not present on request not previously provided. Make sure you provide it according to API specification [http://braaservice.com/api#/Rules_base/add_base]", t));
                 }
             }
-            URLClassLoader classLoader = (URLClassLoader) ctx.getSessionAttribute("classloader");
+            URLClassLoader classLoader;
             if (droolsConfig == null && StringUtils.isNotBlank(rulesPath)) {
                 String schemaPath;
                 try {
@@ -226,17 +225,18 @@ public class Api implements RouteGroup {
                 if (classLoader != null) {
                     droolsConfig = ApiController.createDroolsConfig(rulesPath, classLoader, (DroolsConfig) ctx.getSessionAttribute("drools-config"));
                     ctx.setSessionAttribute("drools-config", droolsConfig);
-                    ctx.setSessionAttribute("classloader", classLoader);
+                    Collection<?> results = ApiController.processAssets(droolsConfig, classLoader, locale, request);
+                    classLoader.close();
+                    if (results != null) {
+                        response.status(HTTP_ACCEPTED);
+                        response.type(JSON_CONTENT_TYPE);
+                        return jsonUtils.toJSON(results);
+                    }
                 } else {
                     return Commons.throwError(response, HTTP_INTERNAL_ERROR, new Exception("It was not possible to load your provided schema to be used later in your rule's base"));
                 }
             }
-            Collection<?> results = ApiController.processAssets(droolsConfig, classLoader, locale, request);
-            if (results != null) {
-                response.status(HTTP_ACCEPTED);
-                response.type(JSON_CONTENT_TYPE);
-                return jsonUtils.toJSON(results);
-            }
+
             return Commons.throwError(response, HTTP_INTERNAL_ERROR, new Exception("It was not possible to load your provided schema to be used later in your rule's base"));
         });
     }

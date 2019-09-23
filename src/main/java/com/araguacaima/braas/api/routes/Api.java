@@ -209,6 +209,7 @@ public class Api implements RouteGroup {
                 if (droolsConfig == null) {
                     return Commons.throwError(response, 424, new Exception("Rule base spreadsheet is not present on request not previously provided. Make sure you provide it according to API specification [http://braaservice.com/api#/Rules_base/add_base]", t));
                 }
+                droolsConfig.setLocale(locale);
             }
             URLClassLoader classLoader;
             if (droolsConfig == null && StringUtils.isNotBlank(rulesPath)) {
@@ -224,6 +225,7 @@ public class Api implements RouteGroup {
                         schemaFile, getFileNameFromPart(request.raw().getPart(FILE_NAME_PREFIX)), sourceClassesDir, compiledClassesDir);
                 if (classLoader != null) {
                     droolsConfig = ApiController.createDroolsConfig(rulesPath, classLoader, (DroolsConfig) ctx.getSessionAttribute("drools-config"));
+                    droolsConfig.setLocale(locale);
                     ctx.setSessionAttribute("drools-config", droolsConfig);
                     Collection<?> results = ApiController.processAssets(droolsConfig, classLoader, request);
                     classLoader.close();
@@ -236,7 +238,6 @@ public class Api implements RouteGroup {
                     return Commons.throwError(response, HTTP_INTERNAL_ERROR, new Exception("It was not possible to load your provided schema to be used later in your rule's base"));
                 }
             }
-
             return Commons.throwError(response, HTTP_INTERNAL_ERROR, new Exception("It was not possible to load your provided schema to be used later in your rule's base"));
         });
     }

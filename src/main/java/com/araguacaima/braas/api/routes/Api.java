@@ -13,6 +13,7 @@ import com.github.victools.jsonschema.generator.Option;
 import com.google.common.collect.ImmutableList;
 import org.apache.commons.io.filefilter.SuffixFileFilter;
 import org.apache.commons.io.filefilter.TrueFileFilter;
+import org.apache.commons.lang3.LocaleUtils;
 import org.pac4j.sparkjava.SparkWebContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -187,7 +188,15 @@ public class Api implements RouteGroup {
         });
         post(ASSETS, (request, response) -> {
             final SparkWebContext ctx = new SparkWebContext(request, response);
-            Locale locale = Locale.getDefault();
+            Locale locale = Locale.ENGLISH;
+            String localeStr = request.params("locale");
+            try {
+                if (StringUtils.isNotBlank(localeStr)) {
+                    locale = LocaleUtils.toLocale(localeStr);
+                }
+            } catch (IllegalArgumentException ignored) {
+
+            }
             SpreadsheetBaseModel spreadsheetBaseModel = new SpreadsheetBaseModel(ctx).invoke();
             File rulesDir = spreadsheetBaseModel.getRulesDir();
             File sourceClassesDir = spreadsheetBaseModel.getSourceClassesDir();

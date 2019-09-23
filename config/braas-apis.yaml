@@ -147,6 +147,7 @@ paths:
         - application/json
         - application/x-www-form-urlencoded
       parameters:
+        - $ref: "#/parameters/locale"
         - in: body
           name: assets
           description: The set of assets to be executed. It could be a single object or an array of them. If you chose to omit this parameter you should mandatory provide an assets-file parameter, as described below
@@ -239,4 +240,12 @@ securityDefinitions:
   braas-session-id:
     type: basic
     name: Cookie
-    in: header    
+    in: header
+# Reusable parameters:
+parameters:
+  locale:
+    name: locale
+    in: query
+    description: Stablish the desired locale in order to handle properly i18n messages or data returned by rules base when multiple languages are setted on it.
+    required: false
+    type: string

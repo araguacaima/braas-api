@@ -109,7 +109,7 @@ public class ApiController {
             globals.put("logger", log);
             droolsUtils.addGlobals(globals);
             Object assets = extractAssets(request, classLoader);
-            results = getMessages(droolsUtils.executeRules(assets));
+            results = getMessages(droolsUtils.executeRules(assets), locale);
         }
         return results;
     }

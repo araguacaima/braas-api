@@ -4,16 +4,11 @@ import com.araguacaima.braas.api.BeanBuilder;
 import com.araguacaima.braas.api.Server;
 import com.araguacaima.braas.api.common.Commons;
 import com.araguacaima.braas.api.controller.ApiController;
-import com.araguacaima.braas.api.exception.InternalBraaSException;
 import com.araguacaima.braas.core.drools.DroolsConfig;
-import com.araguacaima.braas.core.drools.DroolsUtils;
 import com.araguacaima.commons.utils.FileUtils;
 import com.araguacaima.commons.utils.JarUtils;
 import com.araguacaima.commons.utils.StringUtils;
 import com.araguacaima.commons.utils.ZipUtils;
-import com.fasterxml.jackson.databind.DeserializationFeature;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.exc.MismatchedInputException;
 import com.github.victools.jsonschema.generator.Option;
 import com.google.common.collect.ImmutableList;
 import org.apache.commons.io.filefilter.SuffixFileFilter;
@@ -21,15 +16,12 @@ import org.apache.commons.io.filefilter.TrueFileFilter;
 import org.pac4j.sparkjava.SparkWebContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import spark.Request;
 import spark.RouteGroup;
 
-import javax.servlet.ServletException;
 import javax.servlet.http.Part;
 import java.io.File;
 import java.io.IOException;
 import java.net.URLClassLoader;
-import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -44,14 +36,14 @@ import static spark.Spark.post;
 public class Api implements RouteGroup {
 
     public static final String PATH = "/api";
-    public static final String BASE = "/base";
+    private static final String BASE = "/base";
     public static final String JSON_SCHEMA = "/json-schema";
-    public static final String ASSETS = "/assets";
+    private static final String ASSETS = "/assets";
     public static final String API = "Api";
-    public static final String ZIP_COMPRESSED_MIME = "application/x-zip-compressed";
-    public static final String JAR_MIME = "application/java-archive";
-    public static final String OCTET_STREAM_MIME = "application/octet-stream";
-    public static final String ZIP_MIME = "application/zip";
+    private static final String ZIP_COMPRESSED_MIME = "application/x-zip-compressed";
+    private static final String JAR_MIME = "application/java-archive";
+    private static final String OCTET_STREAM_MIME = "application/octet-stream";
+    private static final String ZIP_MIME = "application/zip";
 
     private static Logger log = LoggerFactory.getLogger(Api.class);
 
@@ -75,13 +67,13 @@ public class Api implements RouteGroup {
                 File compiledClassesDir = spreadsheetBaseModel.getCompiledClassesDir();
                 String rulesPath;
                 try {
-                    rulesPath = extractSpreadSheet(request, rulesDir);
+                    rulesPath = ApiController.extractSpreadSheet(request, rulesDir);
                 } catch (Throwable t) {
                     return Commons.throwError(response, HTTP_CONFLICT, new Exception("Rule base spreadsheet is not present on request. Make sure you provide it according to API specification [http://braaservice.com/api#/Rules_base/add_base]", t));
                 }
                 String schemaPath;
                 try {
-                    schemaPath = extractSchema(request, rulesDir);
+                    schemaPath = ApiController.extractSchema(request, rulesDir);
                     ctx.setSessionAttribute("rules-base-file-name", rulesPath);
                 } catch (Throwable t) {
                     return Commons.throwError(response, HTTP_CONFLICT, new Exception("Json schema is not present on request. Make sure you provide it according to API specification [http://braaservice.com/api#/Rules_base/add_base]", t));
@@ -111,8 +103,7 @@ public class Api implements RouteGroup {
                 if (file.exists()) {
                     try {
                         response.status(HTTP_OK);
-                        String result = String.join("", Files.readAllLines(filePath));
-                        return result;
+                        return String.join("", Files.readAllLines(filePath));
                     } catch (IOException e) {
                         response.status(HTTP_INTERNAL_ERROR);
                         return "Exception occurred while reading file" + e.getMessage();
@@ -195,6 +186,7 @@ public class Api implements RouteGroup {
         });
         post(ASSETS, (request, response) -> {
             final SparkWebContext ctx = new SparkWebContext(request, response);
+            Locale locale = Locale.getDefault();
             SpreadsheetBaseModel spreadsheetBaseModel = new SpreadsheetBaseModel(ctx).invoke();
             File rulesDir = spreadsheetBaseModel.getRulesDir();
             File sourceClassesDir = spreadsheetBaseModel.getSourceClassesDir();
@@ -202,7 +194,7 @@ public class Api implements RouteGroup {
             String rulesPath = null;
             DroolsConfig droolsConfig = null;
             try {
-                rulesPath = extractSpreadSheet(request, rulesDir);
+                rulesPath = ApiController.extractSpreadSheet(request, rulesDir);
             } catch (Throwable t) {
                 droolsConfig = (DroolsConfig) ctx.getSessionAttribute("drools-config");
                 if (droolsConfig == null) {
@@ -213,7 +205,7 @@ public class Api implements RouteGroup {
             if (droolsConfig == null && StringUtils.isNotBlank(rulesPath)) {
                 String schemaPath;
                 try {
-                    schemaPath = extractSchema(request, rulesDir);
+                    schemaPath = ApiController.extractSchema(request, rulesDir);
                     ctx.setSessionAttribute("rules-base-file-name", rulesPath);
                 } catch (Throwable t) {
                     return Commons.throwError(response, HTTP_CONFLICT, new Exception("Json schema is not present on request. Make sure you provide it according to API specification [http://braaservice.com/api#/Rules_base/add_base]", t));
@@ -228,10 +220,8 @@ public class Api implements RouteGroup {
                     return Commons.throwError(response, HTTP_INTERNAL_ERROR, new Exception("It was not possible to load your provided schema to be used later in your rule's base"));
                 }
             }
-            if (droolsConfig != null && classLoader != null) {
-                DroolsUtils droolsUtils = new DroolsUtils(droolsConfig);
-                Object assets = extractAssets(request, classLoader);
-                Collection<Object> results = droolsUtils.executeRules(assets);
+            Collection<?> results = ApiController.processAssets(droolsConfig, classLoader, locale, request);
+            if (results != null) {
                 response.status(HTTP_ACCEPTED);
                 response.type(JSON_CONTENT_TYPE);
                 return jsonUtils.toJSON(results);
@@ -240,104 +230,25 @@ public class Api implements RouteGroup {
         });
     }
 
-    private Object extractAssets(Request request, URLClassLoader classLoader) throws InternalBraaSException {
-        Object json = null;
-        try {
-            String assetsStr;
-            try {
-                assetsStr = getStringFromMultipart(request, "assets-file");
-            } catch (Throwable ignored) {
-                assetsStr = request.body();
-            }
-            Class[] classes = com.araguacaima.braas.core.Commons.getClassesFromClassLoader(classLoader);
-            ObjectMapper mapper = new ObjectMapper();
-            mapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true);
-            try {
-                json = jsonUtils.fromJSON(assetsStr, Collection.class);
-                Collection<Object> col = new LinkedList<>();
-                Collection<Map<String, Object>> jsonCollection = (Collection<Map<String, Object>>) json;
-                bindCollectionAssetToObject(classes, mapper, col, jsonCollection);
-                json = col;
-            } catch (MismatchedInputException ignored) {
-                json = bindSingleAssetToObject(assetsStr, classes, mapper);
-            }
-        } catch (Throwable t) {
-            throw new InternalBraaSException(t);
-        }
-        return json;
-    }
-
-    private void bindCollectionAssetToObject(Class[] classes, ObjectMapper mapper, Collection<Object> col, Collection<Map<String, Object>> jsonCollection) throws IOException {
-        for (Map<String, Object> element : jsonCollection) {
-            String element_ = jsonUtils.toJSON(element);
-            for (Class<?> clazz : classes) {
-                try {
-                    Object t = jsonUtils.fromJSON(mapper, element_, clazz);
-                    col.add(t);
-                    break;
-                } catch (Throwable ignored1) {
-                }
-            }
-        }
-    }
-
-    private Object bindSingleAssetToObject(String asset, Class[] classes, ObjectMapper mapper) throws IOException, InternalBraaSException {
-        Object json = null;
-        for (Class<?> clazz : classes) {
-            try {
-                json = jsonUtils.fromJSON(mapper, asset, clazz);
-                break;
-            } catch (MismatchedInputException ignored1) {
-                log.error(ignored1.getMessage());
-            }
-        }
-        if (json == null) {
-            throw new InternalBraaSException("There is no provided schema that satisfy incoming asset. " +
-                    "Each asset provided must be compliant with some object definition in provided schema. " +
-                    "Is not admissible attempting to use an unrecognized or absent property within any of incoming assets");
-        }
-        return json;
-    }
-
-    private String extractSchema(Request request, File rulesDir) throws IOException, ServletException {
-        String schemaPath;
-        try {
-            String schema = getStringFromMultipart(request, "schema-json");
-            File file = new File(rulesDir, "json-schema.json");
-            FileUtils.writeStringToFile(file, schema, StandardCharsets.UTF_8);
-            schemaPath = file.getCanonicalPath();
-        } catch (Throwable ignored) {
-            schemaPath = storeFileAndGetPathFromMultipart(request, "schema-file", rulesDir);
-        }
-        log.debug("Schema path '" + schemaPath + "' loaded!");
-        return schemaPath;
-    }
-
-    private String extractSpreadSheet(Request request, File rulesDir) throws IOException, ServletException {
-        String rulesPath = storeFileAndGetPathFromMultipart(request, FILE_NAME_PREFIX, rulesDir);
-        log.debug("Rule's base '" + rulesPath + "' loaded!");
-        return rulesPath;
-    }
-
-    private class SpreadsheetBaseModel {
+    private static class SpreadsheetBaseModel {
         private SparkWebContext ctx;
         private File rulesDir;
         private File sourceClassesDir;
         private File compiledClassesDir;
 
-        public SpreadsheetBaseModel(SparkWebContext ctx) {
+        SpreadsheetBaseModel(SparkWebContext ctx) {
             this.ctx = ctx;
         }
 
-        public File getRulesDir() {
+        File getRulesDir() {
             return rulesDir;
         }
 
-        public File getSourceClassesDir() {
+        File getSourceClassesDir() {
             return sourceClassesDir;
         }
 
-        public File getCompiledClassesDir() {
+        File getCompiledClassesDir() {
             return compiledClassesDir;
         }
 

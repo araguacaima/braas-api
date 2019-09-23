@@ -4,6 +4,7 @@ import com.araguacaima.braas.api.BeanBuilder;
 import com.araguacaima.braas.api.Server;
 import com.araguacaima.braas.api.common.Commons;
 import com.araguacaima.braas.api.controller.ApiController;
+import com.araguacaima.braas.api.exception.InternalBraaSException;
 import com.araguacaima.braas.core.drools.DroolsConfig;
 import com.araguacaima.braas.core.drools.DroolsUtils;
 import com.araguacaima.commons.utils.FileUtils;
@@ -13,7 +14,6 @@ import com.araguacaima.commons.utils.ZipUtils;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.exc.MismatchedInputException;
-import com.fasterxml.jackson.databind.exc.UnrecognizedPropertyException;
 import com.github.victools.jsonschema.generator.Option;
 import com.google.common.collect.ImmutableList;
 import org.apache.commons.io.filefilter.SuffixFileFilter;
@@ -240,43 +240,61 @@ public class Api implements RouteGroup {
         });
     }
 
-    private Object extractAssets(Request request, URLClassLoader classLoader) throws NoSuchFieldException, IllegalAccessException, IOException {
-        String assetsStr;
-        try {
-            assetsStr = getStringFromMultipart(request, "assets-file");
-        } catch (Throwable ignored) {
-            assetsStr = request.body();
-        }
+    private Object extractAssets(Request request, URLClassLoader classLoader) throws InternalBraaSException {
         Object json = null;
-        Class[] classes = com.araguacaima.braas.core.Commons.getClassesFromClassLoader(classLoader);
-        ObjectMapper mapper = new ObjectMapper();
-        mapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true);
         try {
-            json = jsonUtils.fromJSON(assetsStr, Collection.class);
-            Collection<Object> col = new LinkedList<>();
-            Collection<Map<String, Object>> jsonCollection = (Collection<Map<String, Object>>) json;
-            for (Map<String, Object> element : jsonCollection) {
-                String element_ = jsonUtils.toJSON(element);
-                for (Class<?> clazz : classes) {
-                    try {
-                        Object t = jsonUtils.fromJSON(mapper, element_, clazz);
-                        col.add(t);
-                        break;
-                    } catch (Throwable ignored1) {
-                    }
-                }
+            String assetsStr;
+            try {
+                assetsStr = getStringFromMultipart(request, "assets-file");
+            } catch (Throwable ignored) {
+                assetsStr = request.body();
             }
-            json = col;
-        } catch (MismatchedInputException ignored) {
+            Class[] classes = com.araguacaima.braas.core.Commons.getClassesFromClassLoader(classLoader);
+            ObjectMapper mapper = new ObjectMapper();
+            mapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true);
+            try {
+                json = jsonUtils.fromJSON(assetsStr, Collection.class);
+                Collection<Object> col = new LinkedList<>();
+                Collection<Map<String, Object>> jsonCollection = (Collection<Map<String, Object>>) json;
+                bindCollectionAssetToObject(classes, mapper, col, jsonCollection);
+                json = col;
+            } catch (MismatchedInputException ignored) {
+                json = bindSingleAssetToObject(assetsStr, classes, mapper);
+            }
+        } catch (Throwable t) {
+            throw new InternalBraaSException(t);
+        }
+        return json;
+    }
+
+    private void bindCollectionAssetToObject(Class[] classes, ObjectMapper mapper, Collection<Object> col, Collection<Map<String, Object>> jsonCollection) throws IOException {
+        for (Map<String, Object> element : jsonCollection) {
+            String element_ = jsonUtils.toJSON(element);
             for (Class<?> clazz : classes) {
                 try {
-                    json = jsonUtils.fromJSON(mapper, assetsStr, clazz);
+                    Object t = jsonUtils.fromJSON(mapper, element_, clazz);
+                    col.add(t);
                     break;
-                } catch (UnrecognizedPropertyException ignored1) {
-                    ignored1.printStackTrace();
-                    log.error(ignored1.getMessage());
+                } catch (Throwable ignored1) {
                 }
             }
+        }
+    }
+
+    private Object bindSingleAssetToObject(String asset, Class[] classes, ObjectMapper mapper) throws IOException, InternalBraaSException {
+        Object json = null;
+        for (Class<?> clazz : classes) {
+            try {
+                json = jsonUtils.fromJSON(mapper, asset, clazz);
+                break;
+            } catch (MismatchedInputException ignored1) {
+                log.error(ignored1.getMessage());
+            }
+        }
+        if (json == null) {
+            throw new InternalBraaSException("There is no provided schema that satisfy incoming asset. " +
+                    "Each asset provided must be compliant with some object definition in provided schema. " +
+                    "Is not admissible attempting to use an unrecognized or absent property within any of incoming assets");
         }
         return json;
     }

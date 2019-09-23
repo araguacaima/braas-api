@@ -115,7 +115,7 @@ public class ApiController {
     }
 
     public static Object extractAssets(Request request, URLClassLoader classLoader) throws InternalBraaSException {
-        Object json = null;
+        Object json;
         try {
             String assetsStr;
             try {

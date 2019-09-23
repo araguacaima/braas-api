@@ -162,7 +162,6 @@ public class ApiController {
                 json = jsonUtils.fromJSON(mapper, asset, clazz);
                 break;
             } catch (MismatchedInputException ignored1) {
-                log.error(ignored1.getMessage());
             }
         }
         if (json == null) {

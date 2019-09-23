@@ -96,12 +96,17 @@ public class ApiController {
         return droolsConfig;
     }
 
-    public static Collection<?> processAssets(DroolsConfig droolsConfig, URLClassLoader classLoader, Locale locale, Request request) throws Exception {
+    public static Collection<?> processAssets(DroolsConfig droolsConfig, URLClassLoader classLoader, Request request) throws Exception {
         Collection<?> results = null;
         if (droolsConfig != null && classLoader != null) {
             DroolsUtils droolsUtils = new DroolsUtils(droolsConfig);
             Map<String, Object> globals = new HashMap<>();
-            globals.put("locale", locale);
+            Locale locale = droolsConfig.getLocale();
+            if (locale != null) {
+                globals.put("locale", locale);
+            } else {
+                globals.put("locale", Locale.ENGLISH);
+            }
             globals.put("logger", log);
             droolsUtils.addGlobals(globals);
             Object assets = extractAssets(request, classLoader);

@@ -188,7 +188,7 @@ public class Api implements RouteGroup {
         post(ASSETS, (request, response) -> {
             final SparkWebContext ctx = new SparkWebContext(request, response);
             Locale locale = Locale.ENGLISH;
-            String localeStr = request.params("locale");
+            String localeStr = request.queryParams("locale");
             try {
                 if (StringUtils.isNotBlank(localeStr)) {
                     locale = LocaleUtils.toLocale(localeStr);
@@ -225,7 +225,7 @@ public class Api implements RouteGroup {
                 if (classLoader != null) {
                     droolsConfig = ApiController.createDroolsConfig(rulesPath, classLoader, (DroolsConfig) ctx.getSessionAttribute("drools-config"));
                     ctx.setSessionAttribute("drools-config", droolsConfig);
-                    Collection<?> results = ApiController.processAssets(droolsConfig, classLoader, locale, request);
+                    Collection<?> results = ApiController.processAssets(droolsConfig, classLoader, request);
                     classLoader.close();
                     if (results != null) {
                         response.status(HTTP_ACCEPTED);

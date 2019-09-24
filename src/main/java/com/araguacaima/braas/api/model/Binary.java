@@ -1,19 +1,22 @@
 package com.araguacaima.braas.api.model;
 
+import com.araguacaima.commons.utils.JsonUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.util.Base64;
 import java.util.Collection;
 import java.util.Map;
 
 public class Binary {
 
+    private static final JsonUtils jsonUtils = new JsonUtils();
+    private static Logger log = LoggerFactory.getLogger(Binary.class);
+
     //Binary spreadsheet information that contains the rule's base
     private Spreadsheet spreadsheet;
-    //A json object with a map or array that contains every class schema used within rules.
-    private String schema;
-
-    private Collection schemaArray;
-
-    private Map schemaMap;
+    //A json string with a map or array that contains every class schema used within rules.
+    private Object schemas;
 
     public Spreadsheet getSpreadsheet() {
         return spreadsheet;
@@ -21,16 +24,14 @@ public class Binary {
 
     public void setSpreadsheet(Spreadsheet spreadsheet) {
         this.spreadsheet = spreadsheet;
-        //TODO Convert to a byte[]: binary_
     }
 
-    public String getSchema() {
-        return schema;
+    public Object getSchemas() {
+        return schemas;
     }
 
-    public void setSchema(String schema) {
-        this.schema = schema;
-        //TODO Convert to a Collection schemaArray or Map schemaMap
+    public void setSchemas(Object schemas) {
+        this.schemas = schemas;
     }
 
     public byte[] getBinary_() throws IllegalArgumentException {
@@ -42,11 +43,25 @@ public class Binary {
     }
 
     public Collection getSchemaArray() {
-        return schemaArray;
+        if (this.schemas != null) {
+            try {
+                return (Collection) this.schemas;
+            } catch (Throwable t) {
+                log.debug("Invalid json object as a Collection" + t.getMessage());
+            }
+        }
+        return null;
     }
 
     public Map getSchemaMap() {
-        return schemaMap;
+        if (this.schemas != null) {
+            try {
+                return (Map) this.schemas;
+            } catch (Throwable t) {
+                log.debug("Invalid json object as a Map" + t.getMessage());
+            }
+        }
+        return null;
     }
 
     public static class Spreadsheet {

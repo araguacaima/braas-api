@@ -1,6 +1,7 @@
 package com.araguacaima.braas.api.controller;
 
 import com.araguacaima.braas.api.exception.InternalBraaSException;
+import com.araguacaima.braas.api.model.Binary;
 import com.araguacaima.braas.core.Constants;
 import com.araguacaima.braas.core.drools.DroolsConfig;
 import com.araguacaima.braas.core.drools.DroolsURLClassLoader;
@@ -19,6 +20,7 @@ import org.kie.api.KieBase;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import spark.Request;
+import spark.utils.CollectionUtils;
 
 import javax.servlet.ServletException;
 import java.io.File;
@@ -37,7 +39,7 @@ public class ApiController {
 
     private static Logger log = LoggerFactory.getLogger(ApiController.class);
 
-    public static URLClassLoader buildClassesFromMultipartJsonSchema_(File schemaFile, String fileNameFromPart, File sourceClassesDir, File compiledClassesDir) throws InternalBraaSException {
+    public static URLClassLoader buildClassesFromSchema(File schemaFile, String fileNameFromPart, File sourceClassesDir, File compiledClassesDir) throws InternalBraaSException {
         URLClassLoader classLoader;
         try {
             classLoader = new DroolsURLClassLoader(compiledClassesDir.toURI().toURL(), KieBase.class.getClassLoader());
@@ -58,29 +60,6 @@ public class ApiController {
             throw new InternalBraaSException(e);
         }
         return classLoader;
-    }
-
-    public static Set<Class<?>> buildClassesFromMultipartJsonSchema(File schemaFile, String fileNameFromPart, File sourceClassesDir, File compiledClassesDir) throws InternalBraaSException {
-        Set<Class<?>> classes = null;
-        try {
-            JsonSchemaUtils jsonSchemaUtils = new JsonSchemaUtils(new DroolsURLClassLoader(compiledClassesDir.toURI().toURL(), KieBase.class.getClassLoader()));
-            if (schemaFile.exists()) {
-                classes = new LinkedHashSet<>();
-                String packageName = (Objects.requireNonNull(fileNameFromPart)).replaceAll("-", ".");
-                if (schemaFile.isDirectory()) {
-                    Iterator<File> files = FileUtils.iterateFilesAndDirs(schemaFile, new SuffixFileFilter(JSON_SUFFIX), TrueFileFilter.INSTANCE);
-                    while (files.hasNext()) {
-                        File file = files.next();
-                        classes.addAll(jsonSchemaUtils.processFile(file, packageName, sourceClassesDir, compiledClassesDir));
-                    }
-                } else if (schemaFile.isFile()) {
-                    classes.addAll(jsonSchemaUtils.processFile(schemaFile, packageName, sourceClassesDir, compiledClassesDir));
-                }
-            }
-        } catch (URISyntaxException | NoSuchFieldException | IllegalAccessException | IOException e) {
-            throw new InternalBraaSException(e);
-        }
-        return classes;
     }
 
     public static DroolsConfig createDroolsConfig(String rulesPath, URLClassLoader classLoader, DroolsConfig droolsConfig, Constants.URL_RESOURCE_STRATEGIES urlResourceStrategies) throws InternalBraaSException {
@@ -194,9 +173,43 @@ public class ApiController {
         return rulesPath;
     }
 
-    public static String extractSpreadSheetFromBinary(Request request, File rulesDir, String fileName) throws IOException {
-        String rulesPath = storeFileAndGetPathFromBinary(request, rulesDir, fileName);
+    public static Binary extractBinary(Request request) throws InternalBraaSException {
+        try {
+            return jsonUtils.fromJSON(request.body(), Binary.class);
+        } catch (Throwable e) {
+            throw new InternalBraaSException(e.getMessage());
+        }
+    }
+
+    public static String extractSpreadSheetFromBinary(Binary binarySpreadsheet, File rulesDir, String fileName) throws IOException {
+        String rulesPath = storeFileAndGetPathFromBinary(binarySpreadsheet, rulesDir, fileName);
         log.debug("Rule's base '" + rulesPath + "' loaded!");
         return rulesPath;
+    }
+
+    public static String extractSchemaFromBinary(Binary binarySpreadsheet, File rulesDir) throws InternalBraaSException {
+        String schemaPath;
+        try {
+            String schema;
+            Collection schemaArray = binarySpreadsheet.getSchemaArray();
+            if (CollectionUtils.isNotEmpty(schemaArray)) {
+                schema = jsonUtils.toJSON(schemaArray);
+            } else {
+                String schema_ = jsonUtils.toJSON(binarySpreadsheet.getSchemaMap());
+                if (schema_ == null) {
+                    schema = jsonUtils.toJSON(binarySpreadsheet.getSchemas());
+                } else {
+                    schema = schema_;
+                }
+
+            }
+            File file = new File(rulesDir, JSON_SCHEMA_FILE_NAME);
+            FileUtils.writeStringToFile(file, schema, StandardCharsets.UTF_8);
+            schemaPath = file.getCanonicalPath();
+        } catch (Throwable t) {
+            throw new InternalBraaSException(t);
+        }
+        log.debug("Schema path '" + schemaPath + "' loaded!");
+        return schemaPath;
     }
 }

@@ -146,11 +146,11 @@ public class Api implements RouteGroup {
                     File rulesFile = new File(rulesDir, BRAAS_RULES_FILE_NAME);
                     String rulesPath = rulesFile.getCanonicalPath();
                     File schemaFile = new File(rulesDir, JSON_SCHEMA_FILE_NAME);
-                    URLClassLoader classLoader = ApiController.buildClassesFromSchema(
-                            schemaFile, getFileNameFromPart(request.raw().getPart(FILE_NAME_PREFIX)), sourceClassesDir, compiledClassesDir);
+                    URLClassLoader classLoader = ApiController.buildClassesFromSchema(schemaFile, sourceClassesDir, compiledClassesDir);
                     if (classLoader != null) {
-                        ctx.setSessionAttribute("drools-config", ApiController.createDroolsConfig(
-                                rulesPath, classLoader, (DroolsConfig) ctx.getSessionAttribute("drools-config"), Constants.URL_RESOURCE_STRATEGIES.ABSOLUTE_DECISION_TABLE_PATH));
+                        droolsConfig = ApiController.createDroolsConfig(
+                                rulesPath, classLoader, (DroolsConfig) ctx.getSessionAttribute("drools-config"), Constants.URL_RESOURCE_STRATEGIES.ABSOLUTE_DECISION_TABLE_PATH);
+                        ctx.setSessionAttribute("drools-config", droolsConfig);
                     } else {
                         return Commons.throwError(response, HTTP_INTERNAL_ERROR, new Exception("It was not possible to load your provided schema to be used later in your rule's base"));
                     }
@@ -317,8 +317,7 @@ public class Api implements RouteGroup {
                         return Commons.throwError(response, HTTP_CONFLICT, new Exception("Json schema is not present on request or it is invalid. Make sure you provide it according to API specification [http://braaservice.com/api#/Rules_base/add-or-replace-binary-rules-base]", t));
                     }
                     File schemaFile = new File(schemaPath);
-                    URLClassLoader classLoader = ApiController.buildClassesFromSchema(
-                            schemaFile, JSON_SCHEMA_FILE_NAME, sourceClassesDir, compiledClassesDir);
+                    URLClassLoader classLoader = ApiController.buildClassesFromSchema(schemaFile, sourceClassesDir, compiledClassesDir);
                     if (classLoader != null) {
                         ctx.setSessionAttribute("drools-config", ApiController.createDroolsConfig(
                                 rulesPath, classLoader, (DroolsConfig) ctx.getSessionAttribute("drools-config"), Constants.URL_RESOURCE_STRATEGIES.ABSOLUTE_DECISION_TABLE_PATH));

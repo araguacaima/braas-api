@@ -103,7 +103,7 @@ public class Commons {
     public static final String JAR_PART_NAME = "jar";
     public static final String CLASS_SUFFIX = "class";
     public static final String JSON_SUFFIX = "json";
-    public static final String JSON_SCHEMA_FILE_NAME = "json-schema.json";
+    public static final String JSON_SCHEMA_FILE_NAME = "braas-json-schemas.json";
     public static final String SPREADSHEET_FILE_EXTENSION = ".xlsx";
     public static final ReflectionUtils reflectionUtils = new ReflectionUtils(null);
     final static Config config = new ConfigFactory(JWT_SALT, engine).build(deployedServer, DEFAULT_PATH, clients);

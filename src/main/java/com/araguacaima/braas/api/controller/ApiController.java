@@ -42,13 +42,36 @@ public class ApiController {
 
     private static Logger log = LoggerFactory.getLogger(ApiController.class);
 
-    public static URLClassLoader buildClassesFromSchema(File schemaFile, String fileNameFromPart, File sourceClassesDir, File compiledClassesDir) throws InternalBraaSException {
+    public static URLClassLoader buildClassesFromSchema(File schemaFile, File sourceClassesDir, File compiledClassesDir) throws InternalBraaSException {
         URLClassLoader classLoader;
         try {
             classLoader = new DroolsURLClassLoader(compiledClassesDir.toURI().toURL(), KieBase.class.getClassLoader());
             JsonSchemaUtils<URLClassLoader> jsonSchemaUtils = new JsonSchemaUtils<>(classLoader);
             if (schemaFile.exists()) {
-                String packageName = (Objects.requireNonNull(fileNameFromPart)).replaceAll("-", ".");
+                String packageName = schemaFile.getName().replaceAll("-", ".");
+                if (schemaFile.isDirectory()) {
+                    Iterator<File> files = FileUtils.iterateFilesAndDirs(schemaFile, new SuffixFileFilter(JSON_SUFFIX), TrueFileFilter.INSTANCE);
+                    while (files.hasNext()) {
+                        File file = files.next();
+                        classLoader = jsonSchemaUtils.processFile_(file, packageName, sourceClassesDir, compiledClassesDir);
+                    }
+                } else if (schemaFile.isFile()) {
+                    classLoader = jsonSchemaUtils.processFile_(schemaFile, packageName, sourceClassesDir, compiledClassesDir);
+                }
+            }
+        } catch (URISyntaxException | NoSuchFieldException | IllegalAccessException | IOException e) {
+            throw new InternalBraaSException(e);
+        }
+        return classLoader;
+    }
+
+    public static URLClassLoader buildClassesFromSchema(File schemaFile, String fileName, File sourceClassesDir, File compiledClassesDir) throws InternalBraaSException {
+        URLClassLoader classLoader;
+        try {
+            classLoader = new DroolsURLClassLoader(compiledClassesDir.toURI().toURL(), KieBase.class.getClassLoader());
+            JsonSchemaUtils<URLClassLoader> jsonSchemaUtils = new JsonSchemaUtils<>(classLoader);
+            if (schemaFile.exists()) {
+                String packageName = (Objects.requireNonNull(fileName)).replaceAll("-", ".");
                 if (schemaFile.isDirectory()) {
                     Iterator<File> files = FileUtils.iterateFilesAndDirs(schemaFile, new SuffixFileFilter(JSON_SUFFIX), TrueFileFilter.INSTANCE);
                     while (files.hasNext()) {

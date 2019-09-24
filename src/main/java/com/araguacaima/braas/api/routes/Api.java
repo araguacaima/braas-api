@@ -18,11 +18,8 @@ import org.apache.commons.lang3.LocaleUtils;
 import org.pac4j.sparkjava.SparkWebContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import spark.Request;
-import spark.Response;
 import spark.RouteGroup;
 
-import javax.servlet.ServletException;
 import javax.servlet.http.Part;
 import java.io.File;
 import java.io.IOException;
@@ -33,7 +30,6 @@ import java.nio.file.Paths;
 import java.util.*;
 
 import static com.araguacaima.braas.api.Server.engine;
-import static com.araguacaima.braas.api.Server.multipartConfigElement;
 import static com.araguacaima.braas.api.common.Commons.*;
 import static java.net.HttpURLConnection.*;
 import static spark.Spark.*;
@@ -60,7 +56,6 @@ public class Api implements RouteGroup {
 
     @Override
     public void addRoutes() {
-        before(this::setNamespace);
         //before(Commons.EMPTY_PATH, Commons.genericFilter);
         //before(Commons.EMPTY_PATH, Commons.apiFilter);
         get(Commons.EMPTY_PATH, buildRoute(new BeanBuilder().title(BRAAS + BREADCRUMBS_SEPARATOR + API), "/api"), engine);
@@ -73,7 +68,7 @@ public class Api implements RouteGroup {
             String jsonSchema;
             try {
                 try {
-                    classesPath = storeFileAndGetPathFromMultipart(request, ZIP_PART_NAME, uploadDir);
+                    classesPath = storeFileAndGetPathFromMultipart(request, ZIP_PART_NAME, uploadDir, BRAAS_RULES_FILE_NAME);
                     Part part = request.raw().getPart(ZIP_PART_NAME);
                     String contentType = part.getContentType();
                     if (ZIP_COMPRESSED_MIME.equalsIgnoreCase(contentType) || ZIP_MIME.equalsIgnoreCase(contentType)) {
@@ -85,7 +80,7 @@ public class Api implements RouteGroup {
                         zipUtils.unZip(file, uploadDir);
                     }
                 } catch (Throwable ignored) {
-                    classesPath = storeFileAndGetPathFromMultipart(request, JAR_PART_NAME, uploadDir);
+                    classesPath = storeFileAndGetPathFromMultipart(request, JAR_PART_NAME, uploadDir, BRAAS_RULES_FILE_NAME);
                     Part part = request.raw().getPart(JAR_PART_NAME);
                     String contentType = part.getContentType();
                     if (JAR_MIME.equalsIgnoreCase(contentType) || OCTET_STREAM_MIME.equalsIgnoreCase(contentType)) {
@@ -129,6 +124,7 @@ public class Api implements RouteGroup {
             }
             return EMPTY_RESPONSE;
         });
+        before(ASSETS, ApiController::setNamespace);
         post(ASSETS, (request, response) -> {
             final SparkWebContext ctx = new SparkWebContext(request, response);
             Locale locale = Locale.ENGLISH;
@@ -140,10 +136,27 @@ public class Api implements RouteGroup {
             } catch (IllegalArgumentException ignored) {
 
             }
-
             DroolsConfig droolsConfig = (DroolsConfig) ctx.getSessionAttribute("drools-config");
             if (droolsConfig == null) {
-                return Commons.throwError(response, 424, new Exception("Rule base spreadsheet is not present on request not previously provided. Make sure you provide it according to API specification [http://braaservice.com/api#/Rules_base/add_base]"));
+                try {
+                    ApiController.SpreadsheetBaseModel spreadsheetBaseModel = new ApiController.SpreadsheetBaseModel(ctx).invoke();
+                    File rulesDir = spreadsheetBaseModel.getRulesDir();
+                    File sourceClassesDir = spreadsheetBaseModel.getSourceClassesDir();
+                    File compiledClassesDir = spreadsheetBaseModel.getCompiledClassesDir();
+                    File rulesFile = new File(rulesDir, BRAAS_RULES_FILE_NAME);
+                    String rulesPath = rulesFile.getCanonicalPath();
+                    File schemaFile = new File(rulesDir, JSON_SCHEMA_FILE_NAME);
+                    URLClassLoader classLoader = ApiController.buildClassesFromSchema(
+                            schemaFile, getFileNameFromPart(request.raw().getPart(FILE_NAME_PREFIX)), sourceClassesDir, compiledClassesDir);
+                    if (classLoader != null) {
+                        ctx.setSessionAttribute("drools-config", ApiController.createDroolsConfig(
+                                rulesPath, classLoader, (DroolsConfig) ctx.getSessionAttribute("drools-config"), Constants.URL_RESOURCE_STRATEGIES.ABSOLUTE_DECISION_TABLE_PATH));
+                    } else {
+                        return Commons.throwError(response, HTTP_INTERNAL_ERROR, new Exception("It was not possible to load your provided schema to be used later in your rule's base"));
+                    }
+                } catch (Throwable t) {
+                    return Commons.throwError(response, 424, new Exception("Rule base spreadsheet is not present on request not previously provided. Make sure you provide it according to API specification [http://braaservice.com/api#/Rules_base]", t));
+                }
             }
             droolsConfig.setLocale(locale);
 
@@ -160,7 +173,7 @@ public class Api implements RouteGroup {
         post(ENCODED_RULES, (request, response) -> {
             try {
                 final SparkWebContext ctx = new SparkWebContext(request, response);
-                SpreadsheetBaseModel spreadsheetBaseModel = new SpreadsheetBaseModel(ctx).invoke();
+                ApiController.SpreadsheetBaseModel spreadsheetBaseModel = new ApiController.SpreadsheetBaseModel(ctx).invoke();
                 File uploadDir = spreadsheetBaseModel.getUploadDir();
                 String rulesPath;
                 try {
@@ -181,82 +194,6 @@ public class Api implements RouteGroup {
         });
     }
 
-    void setNamespace(Request request, Response response) throws IOException, ServletException {
-        String sessionId = request.queryParams(BRAAS_SESSION_ID_PARAM);
-        final SparkWebContext ctx = new SparkWebContext(request, response);
-        String storedSessionId;
-        if (sessionId != null) {
-            ctx.setSessionAttribute(BRAAS_SESSION_ID_PARAM, sessionId);
-            storedSessionId = sessionId;
-        } else {
-            storedSessionId = (String) ctx.getSessionAttribute(BRAAS_SESSION_ID_PARAM);
-        }
-        if (org.apache.commons.lang3.StringUtils.isBlank(sessionId)) {
-            sessionId = request.cookie(BRAAS_SESSION_ID_PARAM);
-            if (org.apache.commons.lang3.StringUtils.isBlank(sessionId)) {
-                sessionId = UUID.randomUUID().toString();
-                response.cookie(BRAAS_SESSION_ID_PARAM, sessionId, 86400, true);
-            }
-        }
-
-        if (org.apache.commons.lang3.StringUtils.isBlank(sessionId)) {
-            sessionId = UUID.randomUUID().toString();
-        }
-        File tempDir = null;
-        if (org.apache.commons.lang3.StringUtils.isNotBlank(storedSessionId)) {
-            File baseDir = new File(System.getProperty("java.io.tmpdir"));
-            tempDir = new File(baseDir, sessionId);
-        }
-
-        if (org.apache.commons.lang3.StringUtils.isBlank(storedSessionId) || tempDir == null || !tempDir.exists()) {
-            File baseDir = new File(System.getProperty("java.io.tmpdir"));
-            tempDir = new File(baseDir, sessionId);
-            if (!tempDir.exists()) {
-                tempDir = FileUtils.createTempDir(sessionId);
-            }
-            //tempDir.deleteOnExit();
-            File uploadPath = new File(tempDir, UPLOAD_DIR);
-            uploadPath.mkdir();
-            //uploadPath.deleteOnExit();
-            File rulesPath = new File(tempDir, RULES_DIR);
-            rulesPath.mkdir();
-            //rulesPath.deleteOnExit();
-            File sourceClassesPath = new File(tempDir, SOURCE_CLASSES_DIR);
-            sourceClassesPath.mkdir();
-            //sourceClassesPath.deleteOnExit();
-            sourceClassesPath.setReadable(true);
-            sourceClassesPath.setWritable(true);
-            File compiledClassesPath = new File(tempDir, COMPILED_CLASSES_DIR);
-            compiledClassesPath.mkdir();
-            //compiledClassesPath.deleteOnExit();
-            compiledClassesPath.setReadable(true);
-            compiledClassesPath.setWritable(true);
-            ctx.setSessionAttribute(UPLOAD_DIR_PARAM, uploadPath);
-            ctx.setSessionAttribute(RULES_DIR_PARAM, rulesPath);
-            ctx.setSessionAttribute(SOURCE_CLASSES_DIR_PARAM, sourceClassesPath);
-            ctx.setSessionAttribute(COMPILED_CLASSES_DIR_PARAM, compiledClassesPath);
-            ctx.setSessionAttribute(BRAAS_SESSION_ID_PARAM, sessionId);
-        }
-        String contentType = org.apache.commons.lang3.StringUtils.defaultIfBlank(request.headers("Content-Type"), "");
-        if (contentType.startsWith("multipart/form-data") || contentType.startsWith("application/x-www-form-urlencoded")) {
-            request.raw().setAttribute("org.eclipse.jetty.multipartConfig", multipartConfigElement);
-            request.raw().getParts();
-        }
-        String body = request.body();
-        if (org.apache.commons.lang3.StringUtils.isNotBlank(body)) {
-            if ("application/json".equals(contentType)) {
-                body = jsonUtils.toJSON(jsonUtils.fromJSON(body, Object.class));
-            }
-            if (log.isDebugEnabled()) {
-                log.info("Request for : " + request.requestMethod() + " " + request.uri() + "\n" + body);
-            } else {
-                log.info("Request for : " + request.requestMethod() + " " + request.uri());
-            }
-        } else {
-            log.info("Request for : " + request.requestMethod() + " " + request.uri());
-        }
-    }
-
     public static class ApiFile extends Api implements RouteGroup {
         public static final String PATH = Api.PATH + Api.RULES_BASE + "/file";
 
@@ -264,11 +201,11 @@ public class Api implements RouteGroup {
         public void addRoutes() {
             //before(Commons.EMPTY_PATH, Commons.genericFilter);
             //before(Commons.EMPTY_PATH, Commons.apiFilter);
-            before(this::setNamespace);
+            before(Commons.EMPTY_PATH, ApiController::setNamespace);
             put(Commons.EMPTY_PATH, (request, response) -> {
                 try {
                     final SparkWebContext ctx = new SparkWebContext(request, response);
-                    SpreadsheetBaseModel spreadsheetBaseModel = new SpreadsheetBaseModel(ctx).invoke();
+                    ApiController.SpreadsheetBaseModel spreadsheetBaseModel = new ApiController.SpreadsheetBaseModel(ctx).invoke();
                     File rulesDir = spreadsheetBaseModel.getRulesDir();
                     File sourceClassesDir = spreadsheetBaseModel.getSourceClassesDir();
                     File compiledClassesDir = spreadsheetBaseModel.getCompiledClassesDir();
@@ -281,7 +218,7 @@ public class Api implements RouteGroup {
                     String schemaPath;
                     try {
                         schemaPath = ApiController.extractSchema(request, rulesDir);
-                        ctx.setSessionAttribute("rules-base-file-name", rulesPath);
+                        ctx.setSessionAttribute(RULES_BASE_FILE_NAME_PARAM, rulesPath);
                     } catch (Throwable t) {
                         return Commons.throwError(response, HTTP_CONFLICT, new Exception("Json schema is not present on request. Make sure you provide it according to API specification [http://braaservice.com/api#/Rules_base/add_base]", t));
                     }
@@ -303,7 +240,7 @@ public class Api implements RouteGroup {
             });
             get(Commons.EMPTY_PATH, (request, response) -> {
                 final SparkWebContext ctx = new SparkWebContext(request, response);
-                String fileName = (String) ctx.getSessionAttribute("rules-base-file-name");
+                String fileName = (String) ctx.getSessionAttribute(RULES_BASE_FILE_NAME_PARAM);
                 try {
                     Path filePath = Paths.get("temp").resolve(fileName);
                     File file = filePath.toFile();
@@ -338,7 +275,7 @@ public class Api implements RouteGroup {
             //before(Commons.EMPTY_PATH, Commons.genericFilter);
             //before(Commons.EMPTY_PATH, Commons.apiFilter);
             */
-            before(this::setNamespace);
+            before(Commons.EMPTY_PATH, ApiController::setNamespace);
         }
     }
 
@@ -351,11 +288,11 @@ public class Api implements RouteGroup {
             //before(Commons.EMPTY_PATH, Commons.genericFilter);
             //before(Commons.EMPTY_PATH, Commons.apiFilter);
             */
-            before(this::setNamespace);
+            before(Commons.EMPTY_PATH, ApiController::setNamespace);
             put(Commons.EMPTY_PATH, (request, response) -> {
                 try {
                     final SparkWebContext ctx = new SparkWebContext(request, response);
-                    SpreadsheetBaseModel spreadsheetBaseModel = new SpreadsheetBaseModel(ctx).invoke();
+                    ApiController.SpreadsheetBaseModel spreadsheetBaseModel = new ApiController.SpreadsheetBaseModel(ctx).invoke();
                     File rulesDir = spreadsheetBaseModel.getRulesDir();
                     File sourceClassesDir = spreadsheetBaseModel.getSourceClassesDir();
                     File compiledClassesDir = spreadsheetBaseModel.getCompiledClassesDir();
@@ -375,7 +312,7 @@ public class Api implements RouteGroup {
                     String schemaPath;
                     try {
                         schemaPath = ApiController.extractSchemaFromBinary(binary, rulesDir);
-                        ctx.setSessionAttribute("rules-base-file-name", rulesPath);
+                        ctx.setSessionAttribute(RULES_BASE_FILE_NAME_PARAM, rulesPath);
                     } catch (Throwable t) {
                         return Commons.throwError(response, HTTP_CONFLICT, new Exception("Json schema is not present on request or it is invalid. Make sure you provide it according to API specification [http://braaservice.com/api#/Rules_base/add-or-replace-binary-rules-base]", t));
                     }
@@ -395,42 +332,32 @@ public class Api implements RouteGroup {
                 }
                 return EMPTY_RESPONSE;
             });
+            get(Commons.EMPTY_PATH, (request, response) -> {
+                final SparkWebContext ctx = new SparkWebContext(request, response);
+                String fileName = (String) ctx.getSessionAttribute(RULES_BASE_FILE_NAME_PARAM);
+                try {
+                    Path filePath = Paths.get("temp").resolve(fileName);
+                    File file = filePath.toFile();
+                    if (file.exists()) {
+                        try {
+                            response.status(HTTP_OK);
+                            return String.join("", Files.readAllLines(filePath));
+                        } catch (IOException e) {
+                            response.status(HTTP_INTERNAL_ERROR);
+                            return "Exception occurred while reading file" + e.getMessage();
+                        }
+                    } else {
+                        response.status(HTTP_INTERNAL_ERROR);
+                        return "Rule does not exists";
+                    }
+                } catch (Throwable ex) {
+                    ex.printStackTrace();
+                    response.status(HTTP_INTERNAL_ERROR);
+                }
+                response.raw();
+                return EMPTY_RESPONSE;
+            });
         }
     }
 
-    static class SpreadsheetBaseModel {
-        private SparkWebContext ctx;
-        private File rulesDir;
-        private File sourceClassesDir;
-        private File compiledClassesDir;
-        private File uploadDir;
-
-        SpreadsheetBaseModel(SparkWebContext ctx) {
-            this.ctx = ctx;
-        }
-
-        File getRulesDir() {
-            return rulesDir;
-        }
-
-        File getSourceClassesDir() {
-            return sourceClassesDir;
-        }
-
-        File getCompiledClassesDir() {
-            return compiledClassesDir;
-        }
-
-        File getUploadDir() {
-            return uploadDir;
-        }
-
-        public SpreadsheetBaseModel invoke() {
-            rulesDir = (File) ctx.getSessionAttribute(RULES_DIR_PARAM);
-            sourceClassesDir = (File) ctx.getSessionAttribute(SOURCE_CLASSES_DIR_PARAM);
-            compiledClassesDir = (File) ctx.getSessionAttribute(COMPILED_CLASSES_DIR_PARAM);
-            uploadDir = (File) ctx.getSessionAttribute(UPLOAD_DIR_PARAM);
-            return this;
-        }
-    }
 }

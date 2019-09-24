@@ -9,12 +9,12 @@ import spark.TemplateEngine;
 import java.util.HashMap;
 import java.util.Map;
 
+import static com.araguacaima.braas.api.common.Commons.JSON_CONTENT_TYPE;
 import static com.araguacaima.braas.api.common.Commons.buildModelAndView;
 import static org.pac4j.core.context.HttpConstants.*;
 
 public class HttpActionAdapter extends DefaultHttpActionAdapter {
 
-    private static final String JSON_CONTENT_TYPE = "application/json";
     private final TemplateEngine templateEngine;
 
     public HttpActionAdapter(final TemplateEngine templateEngine) {

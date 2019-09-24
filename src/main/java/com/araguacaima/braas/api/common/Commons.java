@@ -96,6 +96,7 @@ public class Commons {
     public static final String RULES_DIR_PARAM = "rulesDir";
     public static final String SOURCE_CLASSES_DIR_PARAM = "sourceClassesDir";
     public static final String COMPILED_CLASSES_DIR_PARAM = "compiledClassesDir";
+    public static final String RULES_BASE_FILE_NAME_PARAM = "rules-base-file-name";
     public static final String BREADCRUMBS_SEPARATOR = " | ";
     public static final String FILE_NAME_PREFIX = "spreadsheet";
     public static final String ZIP_PART_NAME = "zip";
@@ -106,6 +107,7 @@ public class Commons {
     public static final String SPREADSHEET_FILE_EXTENSION = ".xlsx";
     public static final ReflectionUtils reflectionUtils = new ReflectionUtils(null);
     final static Config config = new ConfigFactory(JWT_SALT, engine).build(deployedServer, DEFAULT_PATH, clients);
+    public static final String BRAAS_RULES_FILE_NAME = "braas-rules.xlsx";
     private static Logger log = LoggerFactory.getLogger(Commons.class);
     public static final ExceptionHandler exceptionHandler = new ExceptionHandlerImpl(Exception.class) {
         @Override
@@ -479,12 +481,10 @@ public class Commons {
         return IOUtils.toString(part.getInputStream(), StandardCharsets.UTF_8);
     }
 
-    public static String storeFileAndGetPathFromMultipart(Request request, String partName, File directory) throws IOException, ServletException {
+    public static String storeFileAndGetPathFromMultipart(Request request, String partName, File directory, String fileName) throws IOException, ServletException {
         HttpServletRequest raw = request.raw();
         raw.setAttribute("org.eclipse.jetty.multipartConfig", multipartConfigElement);
-        Part part = raw.getPart(partName);
-        String fileName = part.getSubmittedFileName();
-        Part uploadedFile = part;
+        Part uploadedFile = raw.getPart(partName);
         Path out = Paths.get(directory.getCanonicalPath() + "/" + fileName);
         try (final InputStream in = uploadedFile.getInputStream()) {
             Files.copy(in, out, StandardCopyOption.REPLACE_EXISTING);

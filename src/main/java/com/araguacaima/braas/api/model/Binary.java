@@ -1,5 +1,6 @@
 package com.araguacaima.braas.api.model;
 
+import java.util.Base64;
 import java.util.Collection;
 import java.util.Map;
 
@@ -9,8 +10,6 @@ public class Binary {
     private Spreadsheet spreadsheet;
     //A json object with a map or array that contains every class schema used within rules.
     private String schema;
-
-    private byte[] binary_;
 
     private Collection schemaArray;
 
@@ -34,8 +33,12 @@ public class Binary {
         //TODO Convert to a Collection schemaArray or Map schemaMap
     }
 
-    public byte[] getBinary_() {
-        return binary_;
+    public byte[] getBinary_() throws IllegalArgumentException {
+        if (this.spreadsheet != null && this.spreadsheet.binary != null) {
+            String binary = this.spreadsheet.binary;
+            return Base64.getDecoder().decode(binary);
+        }
+        return null;
     }
 
     public Collection getSchemaArray() {

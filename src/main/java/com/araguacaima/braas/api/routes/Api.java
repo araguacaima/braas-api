@@ -3,7 +3,6 @@ package com.araguacaima.braas.api.routes;
 import com.araguacaima.braas.api.BeanBuilder;
 import com.araguacaima.braas.api.common.Commons;
 import com.araguacaima.braas.api.controller.ApiController;
-import com.araguacaima.braas.api.model.Binary;
 import com.araguacaima.braas.core.Constants;
 import com.araguacaima.braas.core.drools.DroolsConfig;
 import com.araguacaima.commons.utils.FileUtils;
@@ -253,16 +252,10 @@ public class Api implements RouteGroup {
                     File compiledClassesDir = spreadsheetBaseModel.getCompiledClassesDir();
                     String rulesPath;
                     try {
-                        Binary binarySpreadsheet = jsonUtils.fromJSON(request.body(), Binary.class);
-                    } catch (Throwable t) {
-                        return Commons.throwError(response, HTTP_CONFLICT, new Exception("Incoming body doesn't match with required object structure. Make sure you provide it according to API specification [http://braaservice.com/api#/Rules_base/add-or-replace-binary-rules-base]", t));
-                    }
-
-                    try {
                         String fileName = ctx.getSessionAttribute(SESSION_ID_PARAM) + SPREADSHEET_FILE_EXTENSION;
                         rulesPath = ApiController.extractSpreadSheetFromBinary(request, rulesDir, fileName);
                     } catch (Throwable t) {
-                        return Commons.throwError(response, HTTP_CONFLICT, new Exception("Rule base spreadsheet is not present on request. Make sure you provide it according to API specification [http://braaservice.com/api#/Rules_base/add-or-replace-binary-rules-base]", t));
+                        return Commons.throwError(response, HTTP_CONFLICT, new Exception("Incoming body doesn't match with required object structure. Make sure you provide it according to API specification [http://braaservice.com/api#/Rules_base/add-or-replace-binary-rules-base]", t));
                     }
                     String schemaPath;
                     try {

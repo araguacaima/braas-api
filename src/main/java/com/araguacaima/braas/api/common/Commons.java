@@ -5,6 +5,7 @@ import com.araguacaima.braas.api.ConfigFactory;
 import com.araguacaima.braas.api.MessagesWrapper;
 import com.araguacaima.braas.api.Server;
 import com.araguacaima.braas.api.filter.SessionFilter;
+import com.araguacaima.braas.api.model.Binary;
 import com.araguacaima.braas.api.wrapper.AccountWrapper;
 import com.araguacaima.braas.api.wrapper.RolesWrapper;
 import com.araguacaima.braas.core.drools.DroolsConfig;
@@ -12,6 +13,7 @@ import com.araguacaima.braas.core.drools.DroolsUtils;
 import com.araguacaima.braas.core.drools.OSValidator;
 import com.araguacaima.braas.core.google.model.Account;
 import com.araguacaima.braas.core.google.model.Role;
+import com.araguacaima.commons.utils.FileUtils;
 import com.araguacaima.commons.utils.JsonUtils;
 import com.araguacaima.commons.utils.ReflectionUtils;
 import com.fasterxml.jackson.annotation.JsonInclude;
@@ -28,7 +30,6 @@ import org.pac4j.core.config.Config;
 import org.pac4j.core.profile.CommonProfile;
 import org.pac4j.core.profile.ProfileManager;
 import org.pac4j.sparkjava.SparkWebContext;
-import org.parboiled.common.FileUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import spark.*;
@@ -492,9 +493,9 @@ public class Commons {
     }
 
     public static String storeFileAndGetPathFromBinary(Request request, File directory, String fileName) throws IOException {
-        byte[] bytes = request.bodyAsBytes();
-        File file = new File(directory.getCanonicalPath(), fileName);
-        FileUtils.writeAllBytes(bytes, file);
+        Binary binarySpreadsheet = jsonUtils.fromJSON(request.body(), Binary.class);
+        File file = new File(directory, fileName);
+        FileUtils.writeByteArrayToFile(file, binarySpreadsheet.getBinary_());
         return file.getCanonicalPath();
     }
 

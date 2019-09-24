@@ -1,6 +1,7 @@
 package com.araguacaima.braas.api.controller;
 
 import com.araguacaima.braas.api.exception.InternalBraaSException;
+import com.araguacaima.braas.core.Constants;
 import com.araguacaima.braas.core.drools.DroolsConfig;
 import com.araguacaima.braas.core.drools.DroolsURLClassLoader;
 import com.araguacaima.braas.core.drools.DroolsUtils;
@@ -82,7 +83,7 @@ public class ApiController {
         return classes;
     }
 
-    public static DroolsConfig createDroolsConfig(String rulesPath, URLClassLoader classLoader, DroolsConfig droolsConfig) throws InternalBraaSException {
+    public static DroolsConfig createDroolsConfig(String rulesPath, URLClassLoader classLoader, DroolsConfig droolsConfig, Constants.URL_RESOURCE_STRATEGIES urlResourceStrategies) throws InternalBraaSException {
         try {
             if (StringUtils.isNotBlank(rulesPath) && droolsConfig == null) {
                 Properties props = new PropertiesHandler("drools-absolute-path-decision-table.properties", ApiController.class.getClassLoader()).getProperties();

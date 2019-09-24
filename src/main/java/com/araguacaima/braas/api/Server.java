@@ -182,6 +182,9 @@ public class Server {
         });
         path(Braas.PATH, new Braas());
         path(Api.PATH, new Api());
+        path(Api.ApiFile.PATH, new Api.ApiFile());
+        //path(Api.ApiGoogleDrive.PATH, new Api.ApiGoogleDrive());
+        path(Api.ApiBinary.PATH, new Api.ApiBinary());
         path(Admin.PATH, new Admin());
         log.info("Server listen on port '" + assignedPort + "'");
     }

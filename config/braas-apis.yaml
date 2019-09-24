@@ -20,13 +20,13 @@ schemes:
 - http
 - https
 paths:
-  /api/base:
+  /api/rules-base/file:
     get:
       tags:
       - Rules base
       summary: Download the rule's base.
-      description: Download the rule's base you have previously uploaded in current session as a spreadsheet or non-content if any.
-      operationId: get-base
+      description: Download the rule's base you previously uploaded in current session as a spreadsheet file or non-content if any.
+      operationId: get-file-rules-base
       produces:
         - application/vnd.google-apps.spreadsheet
       responses:
@@ -38,53 +38,12 @@ paths:
         - braas-auth:
           - read:base
         - braas-session-id: []
-    post:
-      tags:
-      - Rules base
-      summary: Add a new rule's base
-      description: Upload a new rule's base as a spreadsheet from a locally file. If there is already a rule's base setted this method will fail. If it's required to replace current rule's base you can try calling PUT method, or DELETE and after this one. This method will fail too for any non-authorized user
-      operationId: add-base
-      consumes:
-        - multipart/form-data
-        - application/x-www-form-urlencoded
-      parameters:
-        - in: formData
-          name: spreadsheet
-          type: file
-          description: The spreadsheet on which the rules resides
-          x-mimetype: application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.google-apps.spreadsheet
-        #- in: formData
-        #  name: schema-json
-        #  type: string
-        #  required: false
-        #  description: A json map containing every class and its associated schema used within rules. If you chose to omit this parameter you should mandatory provide a schema-file, as described bellow
-        - in: formData
-          name: schema-file
-          type: file
-          required: false
-          description: A file with a json map containing every class and its associated schema used within rules. If you chose to omit this parameter you should mandatory provide a schema-json, as described above
-      responses:
-        201:
-         description: Created
-        202:
-         description: Accepted
-        401:
-         description: Unauthorized
-        405:
-         description: Invalid input
-        409:
-          description: Conflict
-      security:
-        - braas-auth:
-          - write:rule
-          - read:rule
-        - braas-session-id: []
     put:
       tags:
-        - Rules base
-      summary: Replace an existent rule's base
-      description: Upload a rule's base as a spreadsheet from a locally file, for replacing an existing one or even creating it if not. If there is already a rule's base setted this method will fail. This method will fail too for any non-authorized user
-      operationId: replace-base
+      - Rules base
+      summary: Add a new or replace a local file based rule's base
+      description: Upload a new rule's base as a spreadsheet from a locally file if it doesn't previously uploaded, or replace an existing one. If there is already a rule's base setted this method will overide it. This method will fail if any non-authorized user attempts to use it.
+      operationId: add-or-replace-file-rules-base
       consumes:
         - multipart/form-data
         - application/x-www-form-urlencoded
@@ -93,18 +52,13 @@ paths:
           name: spreadsheet
           type: file
           required: true
-          description: The spreadsheet on which the rules resides
+          description: The spreadsheet file on which the rules resides
           x-mimetype: application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.google-apps.spreadsheet
-        - in: formData
-          name: schema-json
-          type: string
-          required: false
-          description: A json map containing every class and its associated schema used within rules.
         - in: formData
           name: schema-file
           type: file
-          required: false
-          description: A file with a json map containing every class and its associated schema used within rules.
+          required: true
+          description:  A file with a json map containing every class schema used within rules.
       responses:
         201:
          description: Created
@@ -124,16 +78,142 @@ paths:
     delete:
       tags:
         - Rules base
-      summary: Delete an existent rule's base
-      description: Delete the rule's base previously uploaded. This method will fail if no rule's base was previously uploaded
+      summary: Delete an existent rule's base file
+      description: Delete the rule's base file previously uploaded. This method will fail if no rule's base file was previously uploaded
+      operationId: delete-file-rules-base
       responses:
         200:
           description: OK
         404:
-          description: model not found
+          description: Rule's base not found
       security:
         - braas-auth:
           - delete:rule
+        - braas-session-id: []
+  /api/rules-base/google-drive:
+    get:
+      tags:
+        - Rules base
+      summary: Get the google drive rule's base reference.
+      description: Redirects to the google drive spreadsheet rule's base you have previously configured in current session or error if any.
+      operationId: get-google-drive-rules-base
+      responses:
+        302:
+          description: Redirect
+        409:
+          description: Conflict
+      security:
+        - braas-auth:
+            - read:base
+        - braas-session-id: []
+    put:
+      tags:
+        - Rules base
+      summary: Add a new or replace the based rule's base based on an google drive spreadsheet
+      description: Uploads a new rule's base based on a remote google drive spreadsheet if it doesn't previously uploaded, or replaces an existing reference to it. If there is already a rule's base setted this method will overide the remote reference to it. This method will fail if any non-authorized user attempts to use it.
+      operationId: add-or-replace-google-drive-rules-base
+      consumes:
+        - application/json
+      parameters:
+        - in: body
+          name: spreadsheet
+          type:
+            $ref: "#/definitions/google-drive-model"
+          required: true
+          description: Information for defining the rule's based on a Google Drive spreadsheet
+      responses:
+        201:
+          description: Created
+        202:
+          description: Accepted
+        401:
+          description: Unauthorized
+        405:
+          description: Invalid input
+        409:
+          description: Conflict
+      security:
+        - braas-auth:
+            - write:rule
+            - read:rule
+        - braas-session-id: []
+    delete:
+      tags:
+        - Rules base
+      summary: Delete an existent google drive rule's base
+      description: Delete the google drive rule's base previously configured. This method will fail if no rule's base was previously configured
+      operationId: delete-google-drive-rules-base
+      responses:
+        200:
+          description: OK
+        404:
+          description: Rule's base not found
+      security:
+        - braas-auth:
+            - delete:rule
+        - braas-session-id: []
+  /api/rules-base/binary:
+    get:
+      tags:
+        - Rules base
+      summary: Download the rule's base.
+      description: Download the rule's base you previously uploaded in current session as a spreadsheet or non-content if any.
+      operationId: get-binary-rules-base
+      produces:
+        - application/vnd.google-apps.spreadsheet
+      responses:
+        200:
+          description: OK
+        204:
+          description: No content
+      security:
+        - braas-auth:
+            - read:base
+        - braas-session-id: []
+    put:
+      tags:
+        - Rules base
+      summary: Add a new or replace the rule's base based on a binary spreadsheet
+      description: Uploads a new rule's base based on a binary spreadsheet if it doesn't previously uploaded, or replaces an existing reference to it. If there is already a rule's base setted this method will overide the remote reference to it. This method will fail if any non-authorized user attempts to use it. The binary data must satisfy some of the following mime types [application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.google-apps.spreadsheet]
+      operationId: add-or-replace-binary-rules-base
+      consumes:
+        - application/octet-stream
+      parameters:
+        - in: body
+          name: spreadsheet
+          type: string
+          required: true
+          description: Binary spreadsheet containing the rule's base
+      responses:
+        201:
+          description: Created
+        202:
+          description: Accepted
+        401:
+          description: Unauthorized
+        405:
+          description: Invalid input
+        409:
+          description: Conflict
+      security:
+        - braas-auth:
+            - write:rule
+            - read:rule
+        - braas-session-id: []
+    delete:
+      tags:
+        - Rules base
+      summary: Delete an existent rule's base
+      description: Delete the rule's base previously configured. This method will fail if no rule's base was previously configured
+      operationId: delete-binary-rules-base
+      responses:
+        200:
+          description: OK
+        404:
+          description: Rule's base not found
+      security:
+        - braas-auth:
+            - delete:rule
         - braas-session-id: []
   /api/assets:
     post:
@@ -143,9 +223,7 @@ paths:
       description: By taking the incoming assets, this method executes the rule engine and return whatever such rules have programmed to return. This method will fail too for any non-authorized user or if no rule's base is previously provided.
       operationId: execute-assets
       consumes:
-        - multipart/form-data
         - application/json
-        - application/x-www-form-urlencoded
       parameters:
         - $ref: "#/parameters/locale"
         - in: body
@@ -153,26 +231,6 @@ paths:
           description: The set of assets to be executed. It could be a single object or an array of them. If you chose to omit this parameter you should mandatory provide an assets-file parameter, as described below
           schema:
             type: object
-        - in: formData
-          name: spreadsheet
-          type: file
-          description: The spreadsheet on which the rules resides. If you have already provided the rules base on the current session, you don't need to provide it on every call of this method. This parameter is a convenience way to execute rules in one shot, but it's also possible to provide the rule base once, thru method add-rule described above, and only assests on subsequent invocations.
-          x-mimetype: application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.google-apps.spreadsheet
-        #- in: formData
-        #  name: schema-json
-        #  type: string
-        #  required: false
-        #  description: A json map containing every class and its associated schema used within rules. If you chose to omit this parameter you should mandatory provide a schema-file, as described bellow
-        - in: formData
-          name: schema-file
-          type: file
-          required: false
-          description: A file with a json map containing every class and its associated schema used within rules. If you chose to omit this parameter you should mandatory provide a schema-json, as described above
-        - in: formData
-          name: assets-file
-          type: file
-          required: false
-          description: A file containing every assets to be executed. It could be a single object or an array of them.  If you chose to omit this parameter you should mandatory provide an assets parameter, as described above
       responses:
         202:
           description: Accepted
@@ -246,6 +304,39 @@ parameters:
   locale:
     name: locale
     in: query
-    description: Stablish the desired locale in order to handle properly i18n messages or data returned by rules base when multiple languages are setted on it.
-    required: false
     type: string
+    required: false
+    description: Stablish the desired locale in order to handle properly i18n messages or data returned by rules base when multiple languages are setted on it.
+  rules-base-types:
+    name: rules-base-type
+    in: path
+    type: string
+    enum:
+      - WORKBENCH
+      - MAVEN
+      - ABSOLUTE_DECISION_TABLE_PATH
+      - GOOGLE_DRIVE_DECISION_TABLE_PATH
+      - ABSOLUTE_DRL_PATH
+    required: true
+    description: Rules base type.
+# Definitions:
+definitions:
+  google-drive-model:
+    type: object
+    description: Information for defining the rule's based on a Google Drive spreadsheet
+    properties:
+      rules:
+        type: object
+        description: Unique identifier within Google Drive platform for spreadsheet file that represents the rules' base
+        properties:
+          path:
+            type: string
+            description: Unique identifier within Google Drive platform for spreadsheet file that represents the rules' base
+            required: true
+        required: true
+      credential:
+        type: object
+        description: User credential information for consuming Google Drive
+        required: true
+    required:
+      - rules

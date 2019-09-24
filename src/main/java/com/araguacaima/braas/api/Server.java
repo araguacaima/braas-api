@@ -90,11 +90,15 @@ public class Server {
         staticFiles.externalLocation(TEMP_DIR_PARAM);
         multipartConfigElement = new MultipartConfigElement("/" + TEMP_DIR_PARAM);
         before((request, response) -> {
-            String sessionId;
+            String sessionId = request.queryParams("braas-session-id");
             final SparkWebContext ctx = new SparkWebContext(request, response);
-            String storedSessionId = (String) ctx.getSessionAttribute(SESSION_ID_PARAM);
-            sessionId = storedSessionId;
-
+            String storedSessionId;
+            if (sessionId != null) {
+                storedSessionId = (String) ctx.getSessionAttribute(SESSION_ID_PARAM);
+                sessionId = storedSessionId;
+            } else {
+                storedSessionId = sessionId;
+            }
             if (StringUtils.isBlank(sessionId)) {
                 sessionId = request.cookie("braas-session-id");
                 if (StringUtils.isBlank(sessionId)) {

@@ -27,6 +27,8 @@ paths:
       summary: Download the rule's base.
       description: Download the rule's base you previously uploaded in current session as a spreadsheet file or non-content if any.
       operationId: get-file-rules-base
+      parameters:
+        - $ref: "#/parameters/braas-session"
       produces:
         - application/vnd.google-apps.spreadsheet
       responses:
@@ -48,6 +50,7 @@ paths:
         - multipart/form-data
         - application/x-www-form-urlencoded
       parameters:
+        - $ref: "#/parameters/braas-session"
         - in: formData
           name: spreadsheet
           type: file
@@ -81,6 +84,8 @@ paths:
       summary: Delete an existent rule's base file
       description: Delete the rule's base file previously uploaded. This method will fail if no rule's base file was previously uploaded
       operationId: delete-file-rules-base
+      parameters:
+        - $ref: "#/parameters/braas-session"
       responses:
         200:
           description: OK
@@ -97,6 +102,8 @@ paths:
   #      summary: Get the google drive rule's base reference.
   #      description: Redirects to the google drive spreadsheet rule's base you have previously configured in current session or error if any.
   #      operationId: get-google-drive-rules-base
+  #      parameters:
+  #        - $ref: "#/parameters/braas-session"
   #      responses:
   #        302:
   #          description: Redirect
@@ -112,6 +119,8 @@ paths:
   #      summary: Add a new or replace the based rule's base based on an google drive spreadsheet
   #      description: Uploads a new rule's base based on a remote google drive spreadsheet if it doesn't previously uploaded, or replaces an existing reference to it. If there is already a rule's base setted this method will overide the remote reference to it. This method will fail if any non-authorized user attempts to use it.
   #      operationId: add-or-replace-google-drive-rules-base
+  #      parameters:
+  #        - $ref: "#/parameters/braas-session"
   #      consumes:
   #        - application/json
   #      parameters:
@@ -143,6 +152,8 @@ paths:
   #      summary: Delete an existent google drive rule's base
   #      description: Delete the google drive rule's base previously configured. This method will fail if no rule's base was previously configured
   #      operationId: delete-google-drive-rules-base
+  #      parameters:
+  #        - $ref: "#/parameters/braas-session"
   #      responses:
   #        200:
   #          description: OK
@@ -159,6 +170,8 @@ paths:
       summary: Download the rule's base.
       description: Download the rule's base you previously uploaded in current session as a spreadsheet or non-content if any.
       operationId: get-binary-rules-base
+      parameters:
+        - $ref: "#/parameters/braas-session"
       produces:
         - application/vnd.google-apps.spreadsheet
       responses:
@@ -179,6 +192,7 @@ paths:
       consumes:
         - application/json
       parameters:
+        - $ref: "#/parameters/braas-session"
         - in: body
           name: rules-base
           schema:
@@ -207,6 +221,8 @@ paths:
       summary: Delete an existent rule's base
       description: Delete the rule's base previously configured. This method will fail if no rule's base was previously configured
       operationId: delete-binary-rules-base
+      parameters:
+        - $ref: "#/parameters/braas-session"
       responses:
         200:
           description: OK
@@ -226,6 +242,7 @@ paths:
       consumes:
         - application/json
       parameters:
+        - $ref: "#/parameters/braas-session"
         - $ref: "#/parameters/locale"
         - in: body
           name: assets
@@ -324,6 +341,12 @@ securityDefinitions:
     in: header
 # Reusable parameters:
 parameters:
+  braas-session:
+    name: braas-session-id
+    in: query
+    type: string
+    required: false
+    description: Desired session-id that consumer what's to use in order to identify its namespace. If absent an arbitrary and temporary UUID will be generated.
   locale:
     name: locale
     in: query

@@ -6,7 +6,7 @@ import java.util.Map;
 public class Binary {
 
     //Binary spreadsheet information that contains the rule's base
-    private String binary;
+    private Spreadsheet spreadsheet;
     //A json object with a map or array that contains every class schema used within rules.
     private String schema;
 
@@ -16,12 +16,12 @@ public class Binary {
 
     private Map schemaMap;
 
-    public String getBinary() {
-        return binary;
+    public Spreadsheet getSpreadsheet() {
+        return spreadsheet;
     }
 
-    public void setBinary(String binary) {
-        this.binary = binary;
+    public void setSpreadsheet(Spreadsheet spreadsheet) {
+        this.spreadsheet = spreadsheet;
         //TODO Convert to a byte[]: binary_
     }
 
@@ -32,5 +32,30 @@ public class Binary {
     public void setSchema(String schema) {
         this.schema = schema;
         //TODO Convert to a Collection schemaArray or Map schemaMap
+    }
+
+    public byte[] getBinary_() {
+        return binary_;
+    }
+
+    public Collection getSchemaArray() {
+        return schemaArray;
+    }
+
+    public Map getSchemaMap() {
+        return schemaMap;
+    }
+
+    public static class Spreadsheet {
+        //Base64 binary spreadsheet bytes array information that contains the rule's base
+        private String binary;
+
+        public String getBinary() {
+            return binary;
+        }
+
+        public void setBinary(String binary) {
+            this.binary = binary;
+        }
     }
 }

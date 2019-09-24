@@ -174,7 +174,7 @@ paths:
       tags:
         - Rules base
       summary: Add a new or replace the rule's base based on a binary spreadsheet
-      description: Uploads a new rule's base based on a binary spreadsheet if it doesn't previously uploaded, or replaces an existing reference to it. If there is already a rule's base setted this method will overide the remote reference to it. This method will fail if any non-authorized user attempts to use it. The binary data must satisfy some of the following mime types [application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.google-apps.spreadsheet]
+      description: Uploads a new rule's base based on a Base64 binary spreadsheet if it doesn't previously uploaded, or replaces an existing reference to it. If there is already a rule's base setted this method will overide the remote reference to it. This method will fail if any non-authorized user attempts to use it. The binary data must be encoded thru Base64. After decoded, bytes array resulting must satisfy some of the following mime types [application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.google-apps.spreadsheet] and s
       operationId: add-or-replace-binary-rules-base
       consumes:
         - application/json
@@ -345,10 +345,14 @@ definitions:
     type: object
     description: Information for defining the rule's based on a binary spreadsheet
     properties:
-      binary:
-        type: string
-        description: Binary spreadsheet information that contains the rule's base
-        required: true
+      spreadsheet:
+        type: object
+        description: Information about the spreadsheet that contains the rule's base
+        properties:
+          binary:
+            type: string
+            description: Base64 binary spreadsheet bytes array information that contains the rule's base
+            required: true
       schema:
         type: object
         description: A json object with a map or array that contains every class schema used within rules.

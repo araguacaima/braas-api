@@ -18,8 +18,11 @@ import org.apache.commons.lang3.LocaleUtils;
 import org.pac4j.sparkjava.SparkWebContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import spark.Request;
+import spark.Response;
 import spark.RouteGroup;
 
+import javax.servlet.ServletException;
 import javax.servlet.http.Part;
 import java.io.File;
 import java.io.IOException;
@@ -30,6 +33,7 @@ import java.nio.file.Paths;
 import java.util.*;
 
 import static com.araguacaima.braas.api.Server.engine;
+import static com.araguacaima.braas.api.Server.multipartConfigElement;
 import static com.araguacaima.braas.api.common.Commons.*;
 import static java.net.HttpURLConnection.*;
 import static spark.Spark.*;
@@ -56,6 +60,7 @@ public class Api implements RouteGroup {
 
     @Override
     public void addRoutes() {
+        before(this::setNamespace);
         //before(Commons.EMPTY_PATH, Commons.genericFilter);
         //before(Commons.EMPTY_PATH, Commons.apiFilter);
         get(Commons.EMPTY_PATH, buildRoute(new BeanBuilder().title(BRAAS + BREADCRUMBS_SEPARATOR + API), "/api"), engine);
@@ -176,6 +181,82 @@ public class Api implements RouteGroup {
         });
     }
 
+    void setNamespace(Request request, Response response) throws IOException, ServletException {
+        String sessionId = request.queryParams(BRAAS_SESSION_ID_PARAM);
+        final SparkWebContext ctx = new SparkWebContext(request, response);
+        String storedSessionId;
+        if (sessionId != null) {
+            ctx.setSessionAttribute(BRAAS_SESSION_ID_PARAM, sessionId);
+            storedSessionId = sessionId;
+        } else {
+            storedSessionId = (String) ctx.getSessionAttribute(BRAAS_SESSION_ID_PARAM);
+        }
+        if (org.apache.commons.lang3.StringUtils.isBlank(sessionId)) {
+            sessionId = request.cookie(BRAAS_SESSION_ID_PARAM);
+            if (org.apache.commons.lang3.StringUtils.isBlank(sessionId)) {
+                sessionId = UUID.randomUUID().toString();
+                response.cookie(BRAAS_SESSION_ID_PARAM, sessionId, 86400, true);
+            }
+        }
+
+        if (org.apache.commons.lang3.StringUtils.isBlank(sessionId)) {
+            sessionId = UUID.randomUUID().toString();
+        }
+        File tempDir = null;
+        if (org.apache.commons.lang3.StringUtils.isNotBlank(storedSessionId)) {
+            File baseDir = new File(System.getProperty("java.io.tmpdir"));
+            tempDir = new File(baseDir, sessionId);
+        }
+
+        if (org.apache.commons.lang3.StringUtils.isBlank(storedSessionId) || tempDir == null || !tempDir.exists()) {
+            File baseDir = new File(System.getProperty("java.io.tmpdir"));
+            tempDir = new File(baseDir, sessionId);
+            if (!tempDir.exists()) {
+                tempDir = FileUtils.createTempDir(sessionId);
+            }
+            //tempDir.deleteOnExit();
+            File uploadPath = new File(tempDir, UPLOAD_DIR);
+            uploadPath.mkdir();
+            //uploadPath.deleteOnExit();
+            File rulesPath = new File(tempDir, RULES_DIR);
+            rulesPath.mkdir();
+            //rulesPath.deleteOnExit();
+            File sourceClassesPath = new File(tempDir, SOURCE_CLASSES_DIR);
+            sourceClassesPath.mkdir();
+            //sourceClassesPath.deleteOnExit();
+            sourceClassesPath.setReadable(true);
+            sourceClassesPath.setWritable(true);
+            File compiledClassesPath = new File(tempDir, COMPILED_CLASSES_DIR);
+            compiledClassesPath.mkdir();
+            //compiledClassesPath.deleteOnExit();
+            compiledClassesPath.setReadable(true);
+            compiledClassesPath.setWritable(true);
+            ctx.setSessionAttribute(UPLOAD_DIR_PARAM, uploadPath);
+            ctx.setSessionAttribute(RULES_DIR_PARAM, rulesPath);
+            ctx.setSessionAttribute(SOURCE_CLASSES_DIR_PARAM, sourceClassesPath);
+            ctx.setSessionAttribute(COMPILED_CLASSES_DIR_PARAM, compiledClassesPath);
+            ctx.setSessionAttribute(BRAAS_SESSION_ID_PARAM, sessionId);
+        }
+        String contentType = org.apache.commons.lang3.StringUtils.defaultIfBlank(request.headers("Content-Type"), "");
+        if (contentType.startsWith("multipart/form-data") || contentType.startsWith("application/x-www-form-urlencoded")) {
+            request.raw().setAttribute("org.eclipse.jetty.multipartConfig", multipartConfigElement);
+            request.raw().getParts();
+        }
+        String body = request.body();
+        if (org.apache.commons.lang3.StringUtils.isNotBlank(body)) {
+            if ("application/json".equals(contentType)) {
+                body = jsonUtils.toJSON(jsonUtils.fromJSON(body, Object.class));
+            }
+            if (log.isDebugEnabled()) {
+                log.info("Request for : " + request.requestMethod() + " " + request.uri() + "\n" + body);
+            } else {
+                log.info("Request for : " + request.requestMethod() + " " + request.uri());
+            }
+        } else {
+            log.info("Request for : " + request.requestMethod() + " " + request.uri());
+        }
+    }
+
     public static class ApiFile extends Api implements RouteGroup {
         public static final String PATH = Api.PATH + Api.RULES_BASE + "/file";
 
@@ -183,6 +264,7 @@ public class Api implements RouteGroup {
         public void addRoutes() {
             //before(Commons.EMPTY_PATH, Commons.genericFilter);
             //before(Commons.EMPTY_PATH, Commons.apiFilter);
+            before(this::setNamespace);
             put(Commons.EMPTY_PATH, (request, response) -> {
                 try {
                     final SparkWebContext ctx = new SparkWebContext(request, response);
@@ -256,6 +338,7 @@ public class Api implements RouteGroup {
             //before(Commons.EMPTY_PATH, Commons.genericFilter);
             //before(Commons.EMPTY_PATH, Commons.apiFilter);
             */
+            before(this::setNamespace);
         }
     }
 
@@ -268,6 +351,7 @@ public class Api implements RouteGroup {
             //before(Commons.EMPTY_PATH, Commons.genericFilter);
             //before(Commons.EMPTY_PATH, Commons.apiFilter);
             */
+            before(this::setNamespace);
             put(Commons.EMPTY_PATH, (request, response) -> {
                 try {
                     final SparkWebContext ctx = new SparkWebContext(request, response);
@@ -283,7 +367,7 @@ public class Api implements RouteGroup {
                         return Commons.throwError(response, HTTP_CONFLICT, new Exception("Incoming body doesn't match with required object structure. Make sure you provide it according to API specification [http://braaservice.com/api#/Rules_base/add-or-replace-binary-rules-base]", t));
                     }
                     try {
-                        String fileName = ctx.getSessionAttribute(SESSION_ID_PARAM) + SPREADSHEET_FILE_EXTENSION;
+                        String fileName = ctx.getSessionAttribute(BRAAS_SESSION_ID_PARAM) + SPREADSHEET_FILE_EXTENSION;
                         rulesPath = ApiController.extractSpreadSheetFromBinary(binary, rulesDir, fileName);
                     } catch (Throwable t) {
                         return Commons.throwError(response, HTTP_CONFLICT, new Exception("Incoming body doesn't match with required object structure. Make sure you provide it according to API specification [http://braaservice.com/api#/Rules_base/add-or-replace-binary-rules-base]", t));
@@ -314,7 +398,7 @@ public class Api implements RouteGroup {
         }
     }
 
-    private static class SpreadsheetBaseModel {
+    static class SpreadsheetBaseModel {
         private SparkWebContext ctx;
         private File rulesDir;
         private File sourceClassesDir;

@@ -91,7 +91,7 @@ public class Commons {
     public static final String RULES_DIR = "rules";
     public static final String SOURCE_CLASSES_DIR = "source-classes";
     public static final String COMPILED_CLASSES_DIR = "compiled-classes";
-    public static final String SESSION_ID_PARAM = "sessionId";
+    public static final String BRAAS_SESSION_ID_PARAM = "braasSessionId";
     public static final String UPLOAD_DIR_PARAM = "uploadDir";
     public static final String RULES_DIR_PARAM = "rulesDir";
     public static final String SOURCE_CLASSES_DIR_PARAM = "sourceClassesDir";

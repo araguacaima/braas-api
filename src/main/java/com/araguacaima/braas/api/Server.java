@@ -4,14 +4,11 @@ import com.araguacaima.braas.api.common.Commons;
 import com.araguacaima.braas.api.routes.Admin;
 import com.araguacaima.braas.api.routes.Api;
 import com.araguacaima.braas.api.routes.Braas;
-import com.araguacaima.commons.utils.FileUtils;
 import com.araguacaima.commons.utils.MapUtils;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import de.neuland.jade4j.JadeConfiguration;
 import de.neuland.jade4j.template.TemplateLoader;
-import org.apache.commons.lang3.StringUtils;
-import org.pac4j.sparkjava.SparkWebContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import spark.route.HttpMethod;
@@ -21,11 +18,9 @@ import javax.servlet.MultipartConfigElement;
 import java.io.File;
 import java.io.IOException;
 import java.net.URL;
-import java.security.GeneralSecurityException;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Properties;
-import java.util.UUID;
 
 import static com.araguacaima.braas.api.common.Commons.*;
 import static com.araguacaima.braas.api.common.Security.setCORS;
@@ -82,7 +77,7 @@ public class Server {
     }
 
     @SuppressWarnings("ResultOfMethodCallIgnored")
-    public static void main(String[] args) throws GeneralSecurityException {
+    public static void main(String[] args) {
         exception(Exception.class, exceptionHandler);
         port(assignedPort);
         //secure("deploy/keystore.jks", "password", null, null);
@@ -90,20 +85,26 @@ public class Server {
         staticFiles.externalLocation(TEMP_DIR_PARAM);
         multipartConfigElement = new MultipartConfigElement("/" + TEMP_DIR_PARAM);
         before((request, response) -> {
-            String sessionId = request.queryParams("braas-session-id");
+            response.header("Access-Control-Allow-Origin", "*");
+            response.header("Access-Control-Request-Method", "*");
+            response.header("Access-Control-Allow-Headers", "*");
+            setCORS(request, response);
+        });
+ /*       before((request, response) -> {
+            String sessionId = request.queryParams(BRAAS_SESSION_ID_PARAM);
             final SparkWebContext ctx = new SparkWebContext(request, response);
             String storedSessionId;
             if (sessionId != null) {
-                storedSessionId = (String) ctx.getSessionAttribute(SESSION_ID_PARAM);
-                sessionId = storedSessionId;
-            } else {
+                ctx.setSessionAttribute(BRAAS_SESSION_ID_PARAM, sessionId);
                 storedSessionId = sessionId;
+            } else {
+                storedSessionId = (String) ctx.getSessionAttribute(BRAAS_SESSION_ID_PARAM);
             }
             if (StringUtils.isBlank(sessionId)) {
-                sessionId = request.cookie("braas-session-id");
+                sessionId = request.cookie(BRAAS_SESSION_ID_PARAM);
                 if (StringUtils.isBlank(sessionId)) {
                     sessionId = UUID.randomUUID().toString();
-                    response.cookie("braas-session-id", sessionId, 86400, true);
+                    response.cookie(BRAAS_SESSION_ID_PARAM, sessionId, 86400, true);
                 }
             }
 
@@ -143,7 +144,7 @@ public class Server {
                 ctx.setSessionAttribute(RULES_DIR_PARAM, rulesPath);
                 ctx.setSessionAttribute(SOURCE_CLASSES_DIR_PARAM, sourceClassesPath);
                 ctx.setSessionAttribute(COMPILED_CLASSES_DIR_PARAM, compiledClassesPath);
-                ctx.setSessionAttribute(SESSION_ID_PARAM, sessionId);
+                ctx.setSessionAttribute(BRAAS_SESSION_ID_PARAM, sessionId);
             }
             String contentType = StringUtils.defaultIfBlank(request.headers("Content-Type"), "");
             if (contentType.startsWith("multipart/form-data") || contentType.startsWith("application/x-www-form-urlencoded")) {
@@ -167,7 +168,7 @@ public class Server {
             } else {
                 log.info("Request for : " + request.requestMethod() + " " + request.uri());
             }
-        });
+        });*/
         options(Commons.DEFAULT_PATH + "*", (request, response) -> {
             setCORS(request, response);
             Object method1 = null;

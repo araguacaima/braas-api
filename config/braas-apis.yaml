@@ -342,7 +342,7 @@ securityDefinitions:
 # Reusable parameters:
 parameters:
   braas-session:
-    name: braas-session-id
+    name: braasSessionId
     in: query
     type: string
     required: false

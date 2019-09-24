@@ -194,4 +194,9 @@ public class ApiController {
         return rulesPath;
     }
 
+    public static String extractSpreadSheetFromBinary(Request request, File rulesDir, String fileName) throws IOException {
+        String rulesPath = storeFileAndGetPathFromBinary(request, rulesDir, fileName);
+        log.debug("Rule's base '" + rulesPath + "' loaded!");
+        return rulesPath;
+    }
 }

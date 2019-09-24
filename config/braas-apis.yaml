@@ -90,68 +90,68 @@ paths:
         - braas-auth:
           - delete:rule
         - braas-session-id: []
-  /api/rules-base/google-drive:
-    get:
-      tags:
-        - Rules base
-      summary: Get the google drive rule's base reference.
-      description: Redirects to the google drive spreadsheet rule's base you have previously configured in current session or error if any.
-      operationId: get-google-drive-rules-base
-      responses:
-        302:
-          description: Redirect
-        409:
-          description: Conflict
-      security:
-        - braas-auth:
-            - read:base
-        - braas-session-id: []
-    put:
-      tags:
-        - Rules base
-      summary: Add a new or replace the based rule's base based on an google drive spreadsheet
-      description: Uploads a new rule's base based on a remote google drive spreadsheet if it doesn't previously uploaded, or replaces an existing reference to it. If there is already a rule's base setted this method will overide the remote reference to it. This method will fail if any non-authorized user attempts to use it.
-      operationId: add-or-replace-google-drive-rules-base
-      consumes:
-        - application/json
-      parameters:
-        - in: body
-          name: spreadsheet
-          type:
-            $ref: "#/definitions/google-drive-model"
-          required: true
-          description: Information for defining the rule's based on a Google Drive spreadsheet
-      responses:
-        201:
-          description: Created
-        202:
-          description: Accepted
-        401:
-          description: Unauthorized
-        405:
-          description: Invalid input
-        409:
-          description: Conflict
-      security:
-        - braas-auth:
-            - write:rule
-            - read:rule
-        - braas-session-id: []
-    delete:
-      tags:
-        - Rules base
-      summary: Delete an existent google drive rule's base
-      description: Delete the google drive rule's base previously configured. This method will fail if no rule's base was previously configured
-      operationId: delete-google-drive-rules-base
-      responses:
-        200:
-          description: OK
-        404:
-          description: Rule's base not found
-      security:
-        - braas-auth:
-            - delete:rule
-        - braas-session-id: []
+  #  /api/rules-base/google-drive:
+  #    get:
+  #      tags:
+  #        - Rules base
+  #      summary: Get the google drive rule's base reference.
+  #      description: Redirects to the google drive spreadsheet rule's base you have previously configured in current session or error if any.
+  #      operationId: get-google-drive-rules-base
+  #      responses:
+  #        302:
+  #          description: Redirect
+  #        409:
+  #          description: Conflict
+  #      security:
+  #        - braas-auth:
+  #            - read:base
+  #        - braas-session-id: []
+  #    put:
+  #      tags:
+  #        - Rules base
+  #      summary: Add a new or replace the based rule's base based on an google drive spreadsheet
+  #      description: Uploads a new rule's base based on a remote google drive spreadsheet if it doesn't previously uploaded, or replaces an existing reference to it. If there is already a rule's base setted this method will overide the remote reference to it. This method will fail if any non-authorized user attempts to use it.
+  #      operationId: add-or-replace-google-drive-rules-base
+  #      consumes:
+  #        - application/json
+  #      parameters:
+  #        - in: body
+  #          name: spreadsheet
+  #          type:
+  #            $ref: "#/definitions/google-drive-model"
+  #          required: true
+  #          description: Information for defining the rule's based on a Google Drive spreadsheet
+  #      responses:
+  #        201:
+  #          description: Created
+  #        202:
+  #          description: Accepted
+  #        401:
+  #          description: Unauthorized
+  #        405:
+  #          description: Invalid input
+  #        409:
+  #          description: Conflict
+  #      security:
+  #        - braas-auth:
+  #            - write:rule
+  #            - read:rule
+  #        - braas-session-id: []
+  #    delete:
+  #      tags:
+  #        - Rules base
+  #      summary: Delete an existent google drive rule's base
+  #      description: Delete the google drive rule's base previously configured. This method will fail if no rule's base was previously configured
+  #      operationId: delete-google-drive-rules-base
+  #      responses:
+  #        200:
+  #          description: OK
+  #        404:
+  #          description: Rule's base not found
+  #      security:
+  #        - braas-auth:
+  #            - delete:rule
+  #        - braas-session-id: []
   /api/rules-base/binary:
     get:
       tags:
@@ -177,13 +177,14 @@ paths:
       description: Uploads a new rule's base based on a binary spreadsheet if it doesn't previously uploaded, or replaces an existing reference to it. If there is already a rule's base setted this method will overide the remote reference to it. This method will fail if any non-authorized user attempts to use it. The binary data must satisfy some of the following mime types [application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.google-apps.spreadsheet]
       operationId: add-or-replace-binary-rules-base
       consumes:
-        - application/octet-stream
+        - application/json
       parameters:
         - in: body
-          name: spreadsheet
-          type: string
+          name: rules-base
+          schema:
+            $ref: "#/definitions/binary-model"
           required: true
-          description: Binary spreadsheet containing the rule's base
+          description: Binary spreadsheet information that contains the rule's base and schemas
       responses:
         201:
           description: Created
@@ -340,3 +341,18 @@ definitions:
         required: true
     required:
       - rules
+  binary-model:
+    type: object
+    description: Information for defining the rule's based on a binary spreadsheet
+    properties:
+      binary:
+        type: string
+        description: Binary spreadsheet information that contains the rule's base
+        required: true
+      schema:
+        type: object
+        description: A json object with a map or array that contains every class schema used within rules.
+        required: true
+    required:
+      - binary
+      - schema

@@ -33,16 +33,7 @@ import static spark.Spark.*;
 
 @SuppressWarnings("UnstableApiUsage")
 public class Server {
-    public static final String TEMP_DIR_PARAM = "tmp";
-    public static final String UPLOAD_DIR = "upload";
-    public static final String RULES_DIR = "rules";
-    public static final String SOURCE_CLASSES_DIR = "source-classes";
-    public static final String COMPILED_CLASSES_DIR = "compiled-classes";
-    public static final String SESSION_ID_PARAM = "sessionId";
-    public static final String UPLOAD_DIR_PARAM = "uploadDir";
-    public static final String RULES_DIR_PARAM = "rulesDir";
-    public static final String SOURCE_CLASSES_DIR_PARAM = "sourceClassesDir";
-    public static final String COMPILED_CLASSES_DIR_PARAM = "compiledClassesDir";
+
     public static JadeConfiguration config = new JadeConfiguration();
     public static JadeTemplateEngine engine = new JadeTemplateEngine(config);
     public static int assignedPort;

@@ -28,6 +28,7 @@ import org.pac4j.core.config.Config;
 import org.pac4j.core.profile.CommonProfile;
 import org.pac4j.core.profile.ProfileManager;
 import org.pac4j.sparkjava.SparkWebContext;
+import org.parboiled.common.FileUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import spark.*;
@@ -84,29 +85,23 @@ public class Commons {
     public static final String SEPARATOR_PATH = "/";
     public static final String REJECTED_SCOPES = "rejected_scopes";
 
-    public static final String BUNDLE_NAME = "persistence-messages";
-    public static final String SPECIFICATION_ERROR = "SpecificationError";
-    public static final String SPECIFICATION_ERROR_CREATION = "SpecificationErrorCreation";
-    public static final String SPECIFICATION_ERROR_MODIFICATION = "SpecificationErrorModification";
-    public static final String SPECIFICATION_ERROR_DELETION = "SpecificationErrorDeletion";
-    public static final String SPECIFICATION_ERROR_REPLACEMENT = "SpecificationErrorReplacement";
-    public static final String SPECIFICATION_ERROR_ALREADY_EXISTS = "SpecificationErrorCreationAlreadyExists";
-    public static final String SPECIFICATION_MESSAGE = "SpecificationMessage";
-    public static final String EXISTENT_ENTITY = "ExistentEntity";
-    public static final String OPERATION_TYPE = "OperationType";
-    public static final String INITIATOR = "Initiator";
-    public static final String INITIATOR_DIAGRAM_TYPE = "InitiatorDiagramType";
-    public static final String SPECIFICATION_REPLACED_ENTITY = "SpecificationReplacedEntity";
-    public static final String SPECIFICATION_REPLACED_ENTITIES = "SpecificationReplacedEntities";
-    public static final String SPECIFICATION_STORED_REPLACEMENTS = "SpecificationStoredReplacements";
-    public static final String BREAK_REMAINING_SPECIFICATIONS = "BreakRemainingSpecifications";
-    public static final String STORED_RANKS = "STORED_RANKS";
+    public static final String TEMP_DIR_PARAM = "tmp";
+    public static final String UPLOAD_DIR = "upload";
+    public static final String RULES_DIR = "rules";
+    public static final String SOURCE_CLASSES_DIR = "source-classes";
+    public static final String COMPILED_CLASSES_DIR = "compiled-classes";
+    public static final String SESSION_ID_PARAM = "sessionId";
+    public static final String UPLOAD_DIR_PARAM = "uploadDir";
+    public static final String RULES_DIR_PARAM = "rulesDir";
+    public static final String SOURCE_CLASSES_DIR_PARAM = "sourceClassesDir";
+    public static final String COMPILED_CLASSES_DIR_PARAM = "compiledClassesDir";
     public static final String BREADCRUMBS_SEPARATOR = " | ";
     public static final String FILE_NAME_PREFIX = "spreadsheet";
     public static final String ZIP_PART_NAME = "zip";
     public static final String JAR_PART_NAME = "jar";
     public static final String CLASS_SUFFIX = "class";
     public static final String JSON_SUFFIX = "json";
+    public static final String SPREADSHEET_FILE_EXTENSION = ".xlsx";
     public static final ReflectionUtils reflectionUtils = new ReflectionUtils(null);
     final static Config config = new ConfigFactory(JWT_SALT, engine).build(deployedServer, DEFAULT_PATH, clients);
     private static Logger log = LoggerFactory.getLogger(Commons.class);
@@ -494,6 +489,13 @@ public class Commons {
         }
         uploadedFile = null;
         return out.toFile().getCanonicalPath();
+    }
+
+    public static String storeFileAndGetPathFromBinary(Request request, File directory, String fileName) throws IOException {
+        byte[] bytes = request.bodyAsBytes();
+        File file = new File(directory.getCanonicalPath(), fileName);
+        FileUtils.writeAllBytes(bytes, file);
+        return file.getCanonicalPath();
     }
 
     public static String getFilePath(String fileName) throws URISyntaxException, NullPointerException {

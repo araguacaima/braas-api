@@ -161,6 +161,7 @@ public class Api implements RouteGroup {
             droolsConfig.setLocale(locale);
 
             URLClassLoader classLoader = droolsConfig.getClassLoader();
+            log.info("DroolsConfig: " + jsonUtils.toJSON(droolsConfig));
             Collection<?> results = ApiController.processAssets(droolsConfig, classLoader, request);
 
             if (results != null) {

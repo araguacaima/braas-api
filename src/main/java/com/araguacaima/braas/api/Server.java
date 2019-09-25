@@ -37,7 +37,7 @@ public class Server {
     public static MultipartConfigElement multipartConfigElement;
     private static TemplateLoader templateLoader = new Loader("web/views");
     private static Logger log = LoggerFactory.getLogger(Server.class);
-    private static Map<String, String> environment;
+    public static Map<String, String> environment;
     private static ProcessBuilder processBuilder = new ProcessBuilder();
 
     static {
@@ -90,85 +90,6 @@ public class Server {
             response.header("Access-Control-Allow-Headers", "*");
             setCORS(request, response);
         });
- /*       before((request, response) -> {
-            String sessionId = request.queryParams(BRAAS_SESSION_ID_PARAM);
-            final SparkWebContext ctx = new SparkWebContext(request, response);
-            String storedSessionId;
-            if (sessionId != null) {
-                ctx.setSessionAttribute(BRAAS_SESSION_ID_PARAM, sessionId);
-                storedSessionId = sessionId;
-            } else {
-                storedSessionId = (String) ctx.getSessionAttribute(BRAAS_SESSION_ID_PARAM);
-            }
-            if (StringUtils.isBlank(sessionId)) {
-                sessionId = request.cookie(BRAAS_SESSION_ID_PARAM);
-                if (StringUtils.isBlank(sessionId)) {
-                    sessionId = UUID.randomUUID().toString();
-                    response.cookie(BRAAS_SESSION_ID_PARAM, sessionId, 86400, true);
-                }
-            }
-
-            if (StringUtils.isBlank(sessionId)) {
-                sessionId = UUID.randomUUID().toString();
-            }
-            File tempDir = null;
-            if (StringUtils.isNotBlank(storedSessionId)) {
-                File baseDir = new File(System.getProperty("java.io.tmpdir"));
-                tempDir = new File(baseDir, sessionId);
-            }
-
-            if (StringUtils.isBlank(storedSessionId) || tempDir == null || !tempDir.exists()) {
-                File baseDir = new File(System.getProperty("java.io.tmpdir"));
-                tempDir = new File(baseDir, sessionId);
-                if (!tempDir.exists()) {
-                    tempDir = FileUtils.createTempDir(sessionId);
-                }
-                //tempDir.deleteOnExit();
-                File uploadPath = new File(tempDir, UPLOAD_DIR);
-                uploadPath.mkdir();
-                //uploadPath.deleteOnExit();
-                File rulesPath = new File(tempDir, RULES_DIR);
-                rulesPath.mkdir();
-                //rulesPath.deleteOnExit();
-                File sourceClassesPath = new File(tempDir, SOURCE_CLASSES_DIR);
-                sourceClassesPath.mkdir();
-                //sourceClassesPath.deleteOnExit();
-                sourceClassesPath.setReadable(true);
-                sourceClassesPath.setWritable(true);
-                File compiledClassesPath = new File(tempDir, COMPILED_CLASSES_DIR);
-                compiledClassesPath.mkdir();
-                //compiledClassesPath.deleteOnExit();
-                compiledClassesPath.setReadable(true);
-                compiledClassesPath.setWritable(true);
-                ctx.setSessionAttribute(UPLOAD_DIR_PARAM, uploadPath);
-                ctx.setSessionAttribute(RULES_DIR_PARAM, rulesPath);
-                ctx.setSessionAttribute(SOURCE_CLASSES_DIR_PARAM, sourceClassesPath);
-                ctx.setSessionAttribute(COMPILED_CLASSES_DIR_PARAM, compiledClassesPath);
-                ctx.setSessionAttribute(BRAAS_SESSION_ID_PARAM, sessionId);
-            }
-            String contentType = StringUtils.defaultIfBlank(request.headers("Content-Type"), "");
-            if (contentType.startsWith("multipart/form-data") || contentType.startsWith("application/x-www-form-urlencoded")) {
-                request.raw().setAttribute("org.eclipse.jetty.multipartConfig", multipartConfigElement);
-                request.raw().getParts();
-            }
-            response.header("Access-Control-Allow-Origin", "*");
-            response.header("Access-Control-Request-Method", "*");
-            response.header("Access-Control-Allow-Headers", "*");
-            setCORS(request, response);
-            String body = request.body();
-            if (StringUtils.isNotBlank(body)) {
-                if ("application/json".equals(contentType)) {
-                    body = jsonUtils.toJSON(jsonUtils.fromJSON(body, Object.class));
-                }
-                if (log.isDebugEnabled()) {
-                    log.info("Request for : " + request.requestMethod() + " " + request.uri() + "\n" + body);
-                } else {
-                    log.info("Request for : " + request.requestMethod() + " " + request.uri());
-                }
-            } else {
-                log.info("Request for : " + request.requestMethod() + " " + request.uri());
-            }
-        });*/
         options(Commons.DEFAULT_PATH + "*", (request, response) -> {
             setCORS(request, response);
             Object method1 = null;

@@ -34,6 +34,7 @@ import java.net.URLClassLoader;
 import java.nio.charset.StandardCharsets;
 import java.util.*;
 
+import static com.araguacaima.braas.api.Server.environment;
 import static com.araguacaima.braas.api.Server.multipartConfigElement;
 import static com.araguacaima.braas.api.common.Commons.*;
 import static com.araguacaima.braas.core.drools.utils.RuleMessageUtils.getMessages;
@@ -261,13 +262,14 @@ public class ApiController {
             braasSessionId = UUID.randomUUID().toString();
         }
         File tempDir = null;
+        String namespacesFilePath = StringUtils.defaultIfBlank(environment.get("NAMESPACES_FULL_PATH"), System.getProperty("java.io.tmpdir"));
         if (org.apache.commons.lang3.StringUtils.isNotBlank(storedSessionId)) {
-            File baseDir = new File(System.getProperty("java.io.tmpdir"));
+            File baseDir = new File(namespacesFilePath);
             tempDir = new File(baseDir, braasSessionId);
         }
 
         if (org.apache.commons.lang3.StringUtils.isBlank(storedSessionId) || tempDir == null || !tempDir.exists()) {
-            File baseDir = new File(System.getProperty("java.io.tmpdir"));
+            File baseDir = new File(namespacesFilePath);
             tempDir = new File(baseDir, braasSessionId);
             if (!tempDir.exists()) {
                 tempDir = FileUtils.createTempDir(braasSessionId);

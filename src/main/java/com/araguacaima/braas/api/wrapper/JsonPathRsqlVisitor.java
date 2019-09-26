@@ -1,6 +1,5 @@
 package com.araguacaima.braas.api.wrapper;
 
-import com.araguacaima.commons.utils.JsonUtils;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import cz.jirutka.rsql.parser.ast.*;
@@ -11,13 +10,14 @@ import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
 import java.util.List;
 
+import static com.araguacaima.braas.api.common.Commons.jsonUtils;
+
 public class JsonPathRsqlVisitor implements RSQLVisitor<String, String> {
 
     public static final String GET_ALL_RESULTS = "id==*";
     private static Logger log = LoggerFactory.getLogger(JsonPathRsqlVisitor.class);
     private Object json;
     private String filter;
-    private JsonUtils jsonUtils = new JsonUtils();
 
     public JsonPathRsqlVisitor(Object json) {
         this(json, null);

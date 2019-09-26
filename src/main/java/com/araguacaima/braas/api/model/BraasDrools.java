@@ -1,17 +1,18 @@
 package com.araguacaima.braas.api.model;
 
-import com.araguacaima.commons.utils.JsonUtils;
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import org.bson.types.ObjectId;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.IOException;
 import java.util.Base64;
 import java.util.Collection;
 import java.util.Map;
 
+import static com.araguacaima.braas.api.common.Commons.jsonUtils;
+
+@JsonDeserialize(using = BraasDroolsDeserializer.class)
 public class BraasDrools {
-    private static final JsonUtils jsonUtils = new JsonUtils();
     private static Logger log = LoggerFactory.getLogger(BraasDrools.class);
     private ObjectId id;
     private String braasId;
@@ -64,13 +65,11 @@ public class BraasDrools {
         return null;
     }
 
+    @SuppressWarnings("ConstantConditions")
     public Collection getSchemaArray() {
         if (this.schemas != null) {
             try {
-                try {
-                    return jsonUtils.fromJSON(this.schemas, Collection.class);
-                } catch (IOException ignored) {
-                }
+                return jsonUtils.fromJSON(this.schemas, Collection.class);
             } catch (Throwable t) {
                 log.debug("Invalid json object as a Collection" + t.getMessage());
             }
@@ -81,10 +80,7 @@ public class BraasDrools {
     public Map getSchemaMap() {
         if (this.schemas != null) {
             try {
-                try {
-                    return jsonUtils.fromJSON(this.schemas, Map.class);
-                } catch (IOException ignored) {
-                }
+                return jsonUtils.fromJSON(this.schemas, Map.class);
             } catch (Throwable t) {
                 log.debug("Invalid json object as a Map" + t.getMessage());
             }

@@ -35,9 +35,9 @@ public class Server {
     public static String deployedServer;
     public static String basePath;
     public static MultipartConfigElement multipartConfigElement;
+    public static Map<String, String> environment;
     private static TemplateLoader templateLoader = new Loader("web/views");
     private static Logger log = LoggerFactory.getLogger(Server.class);
-    public static Map<String, String> environment;
     private static ProcessBuilder processBuilder = new ProcessBuilder();
 
     static {

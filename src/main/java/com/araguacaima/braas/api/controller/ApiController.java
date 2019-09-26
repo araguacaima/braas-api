@@ -40,6 +40,22 @@ public class ApiController {
 
     private static Logger log = LoggerFactory.getLogger(ApiController.class);
 
+    public static URLClassLoader buildClassesFromSchema(BraasDrools braasDrools, File sourceClassesDir, File compiledClassesDir) throws InternalBraaSException {
+        try {
+            Collection col = braasDrools.getSchemaArray();
+            if (col != null) {
+                return buildClassesFromSchema(jsonUtils.toJSON(col), sourceClassesDir, compiledClassesDir);
+            }
+            Map map = braasDrools.getSchemaMap();
+            if (map != null) {
+                return buildClassesFromSchema(jsonUtils.toJSON(map), sourceClassesDir, compiledClassesDir);
+            }
+            throw new InternalBraaSException("Incompatible schemas");
+        } catch (IOException e) {
+            throw new InternalBraaSException(e);
+        }
+    }
+
     public static URLClassLoader buildClassesFromSchema(String json, File sourceClassesDir, File compiledClassesDir) throws InternalBraaSException {
         URLClassLoader classLoader;
         try {

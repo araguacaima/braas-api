@@ -110,8 +110,8 @@ public class Commons {
     public static final String JSON_SCHEMA_FILE_NAME = "braas-json-schemas.json";
     public static final String SPREADSHEET_FILE_EXTENSION = ".xlsx";
     public static final ReflectionUtils reflectionUtils = new ReflectionUtils(null);
-    final static Config config = new ConfigFactory(JWT_SALT, engine).build(deployedServer, DEFAULT_PATH, clients);
     public static final String BRAAS_RULES_FILE_NAME = "braas-rules.xlsx";
+    final static Config config = new ConfigFactory(JWT_SALT, engine).build(deployedServer, DEFAULT_PATH, clients);
     private static Logger log = LoggerFactory.getLogger(Commons.class);
     public static final ExceptionHandler exceptionHandler = new ExceptionHandlerImpl(Exception.class) {
         @Override
@@ -148,7 +148,8 @@ public class Commons {
     //static Filter scopesFilter = new ScopesFilter(config, clients, "filterAllRolesAuthorizer");
 
     static {
-        jsonUtils.getMapper().setSerializationInclusion(JsonInclude.Include.NON_NULL);
+        ObjectMapper mapper = jsonUtils.getMapper();
+        mapper.setSerializationInclusion(JsonInclude.Include.NON_NULL);
     }
 
     public static String render(Map<String, Object> model, String templatePath) {
@@ -521,11 +522,6 @@ public class Commons {
         return null;
     }
 
-    public enum InputOutput {
-        input,
-        output
-    }
-
     public static String encodeFileToBase64(String fileName) throws IOException {
         return encodeFileToBase64(new File(fileName));
     }
@@ -537,6 +533,11 @@ public class Commons {
 
     public static String encodeFileToBase64(byte[] result) {
         return Base64.getEncoder().encodeToString(result);
+    }
+
+    public enum InputOutput {
+        input,
+        output
     }
 
 }

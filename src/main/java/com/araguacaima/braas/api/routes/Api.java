@@ -39,11 +39,11 @@ import static spark.Spark.*;
 public class Api implements RouteGroup {
 
     public static final String PATH = "/api";
-    private static final String RULES_BASE = "/rules-base";
     public static final String JSON_SCHEMA = "/json-schema";
+    public static final String API = "Api";
+    private static final String RULES_BASE = "/rules-base";
     private static final String ASSETS = "/assets";
     private static final String ENCODED_RULES = "/encoded-rules";
-    public static final String API = "Api";
     private static final String ZIP_COMPRESSED_MIME = "application/x-zip-compressed";
     private static final String JAR_MIME = "application/java-archive";
     private static final String OCTET_STREAM_MIME = "application/octet-stream";
@@ -157,7 +157,7 @@ public class Api implements RouteGroup {
                     ApiController.SpreadsheetBaseModel spreadsheetBaseModel = new ApiController.SpreadsheetBaseModel(ctx).invoke();
                     File sourceClassesDir = spreadsheetBaseModel.getSourceClassesDir();
                     File compiledClassesDir = spreadsheetBaseModel.getCompiledClassesDir();
-                    URLClassLoader classLoader = ApiController.buildClassesFromSchema(braasDrools.getSchemas(), sourceClassesDir, compiledClassesDir);
+                    URLClassLoader classLoader = ApiController.buildClassesFromSchema(braasDrools, sourceClassesDir, compiledClassesDir);
                     if (classLoader != null) {
                         droolsConfig = ApiController.createDroolsConfig(
                                 braasDrools.getSpreadsheet().getBinary(), classLoader, droolsConfig, Constants.URL_RESOURCE_STRATEGIES.ABSOLUTE_DECISION_TABLE_PATH);
@@ -208,9 +208,9 @@ public class Api implements RouteGroup {
 
         @Override
         public void addRoutes() {
-            //before(Commons.EMPTY_PATH + "*", Commons.genericFilter);
-            //before(Commons.EMPTY_PATH + "*", Commons.apiFilter);
-            before(Commons.EMPTY_PATH + "*", ApiController::setNamespace);
+            //before(Commons.EMPTY_PATH, Commons.genericFilter);
+            //before(Commons.EMPTY_PATH, Commons.apiFilter);
+            before(Commons.EMPTY_PATH, ApiController::setNamespace);
             put(Commons.EMPTY_PATH, (request, response) -> {
                 try {
                     final SparkWebContext ctx = new SparkWebContext(request, response);
@@ -298,10 +298,10 @@ public class Api implements RouteGroup {
         @Override
         public void addRoutes() {
             /*
-            //before(Commons.EMPTY_PATH + "*", Commons.genericFilter);
-            //before(Commons.EMPTY_PATH + "*", Commons.apiFilter);
+            //before(Commons.EMPTY_PATH, Commons.genericFilter);
+            //before(Commons.EMPTY_PATH, Commons.apiFilter);
             */
-            before(Commons.EMPTY_PATH + "*", ApiController::setNamespace);
+            before(Commons.EMPTY_PATH, ApiController::setNamespace);
         }
     }
 
@@ -311,42 +311,27 @@ public class Api implements RouteGroup {
         @Override
         public void addRoutes() {
             /*
-            //before(Commons.EMPTY_PATH + "*", Commons.genericFilter);
-            //before(Commons.EMPTY_PATH + "*", Commons.apiFilter);
+            //before(Commons.EMPTY_PATH, Commons.genericFilter);
+            //before(Commons.EMPTY_PATH, Commons.apiFilter);
             */
-            before(Commons.EMPTY_PATH + "*", ApiController::setNamespace);
+            before(Commons.EMPTY_PATH, ApiController::setNamespace);
             put(Commons.EMPTY_PATH, (request, response) -> {
                 try {
                     final SparkWebContext ctx = new SparkWebContext(request, response);
                     ApiController.SpreadsheetBaseModel spreadsheetBaseModel = new ApiController.SpreadsheetBaseModel(ctx).invoke();
-                    File rulesDir = spreadsheetBaseModel.getRulesDir();
                     File sourceClassesDir = spreadsheetBaseModel.getSourceClassesDir();
                     File compiledClassesDir = spreadsheetBaseModel.getCompiledClassesDir();
-                    String rulesPath;
+                    String braasSessionId = (String) ctx.getSessionAttribute(BRAAS_SESSION_ID_PARAM);
                     BraasDrools braasDrools;
                     try {
                         braasDrools = ApiController.extractBinary(request);
+                        braasDrools.setBraasId(braasSessionId);
+                        braasDrools = MongoAccess.updateBraasDrools(BRAAS_DROOLS_PARAM, braasDrools);
                     } catch (Throwable t) {
                         return Commons.throwError(response, HTTP_CONFLICT, new Exception("Incoming body doesn't match with required object structure. Make sure you provide it according to API specification [http://braaservice.com/api#/Rules_base/add-or-replace-binary-rules-base]", t));
                     }
-                    try {
-                        String fileName = ctx.getSessionAttribute(BRAAS_SESSION_ID_PARAM) + SPREADSHEET_FILE_EXTENSION;
-                        rulesPath = ApiController.extractSpreadSheetFromBinary(braasDrools, rulesDir, fileName);
-                    } catch (Throwable t) {
-                        return Commons.throwError(response, HTTP_CONFLICT, new Exception("Incoming body doesn't match with required object structure. Make sure you provide it according to API specification [http://braaservice.com/api#/Rules_base/add-or-replace-binary-rules-base]", t));
-                    }
-                    String schemaPath;
-                    try {
-                        schemaPath = ApiController.extractSchemaFromBinary(braasDrools, rulesDir);
-                        ctx.setSessionAttribute(RULES_BASE_FILE_NAME_PARAM, rulesPath);
-                    } catch (Throwable t) {
-                        return Commons.throwError(response, HTTP_CONFLICT, new Exception("Json schema is not present on request or it is invalid. Make sure you provide it according to API specification [http://braaservice.com/api#/Rules_base/add-or-replace-binary-rules-base]", t));
-                    }
-                    File schemaFile = new File(schemaPath);
-                    URLClassLoader classLoader = ApiController.buildClassesFromSchema(schemaFile, sourceClassesDir, compiledClassesDir);
+                    URLClassLoader classLoader = ApiController.buildClassesFromSchema(braasDrools, sourceClassesDir, compiledClassesDir);
                     if (classLoader != null) {
-                        ctx.setSessionAttribute(DROOLS_CONFIG_PARAM, ApiController.createDroolsConfig(
-                                rulesPath, classLoader, (DroolsConfig) ctx.getSessionAttribute(DROOLS_CONFIG_PARAM), Constants.URL_RESOURCE_STRATEGIES.ABSOLUTE_DECISION_TABLE_PATH));
                         response.status(HTTP_CREATED);
                     } else {
                         return Commons.throwError(response, HTTP_INTERNAL_ERROR, new Exception("It was not possible to load your provided schema to be used later in your rule's base"));

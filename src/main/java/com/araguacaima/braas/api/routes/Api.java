@@ -3,7 +3,8 @@ package com.araguacaima.braas.api.routes;
 import com.araguacaima.braas.api.BeanBuilder;
 import com.araguacaima.braas.api.common.Commons;
 import com.araguacaima.braas.api.controller.ApiController;
-import com.araguacaima.braas.api.model.Binary;
+import com.araguacaima.braas.api.controller.MongoAccess;
+import com.araguacaima.braas.api.model.BraasDrools;
 import com.araguacaima.braas.core.Constants;
 import com.araguacaima.braas.core.drools.DroolsConfig;
 import com.araguacaima.commons.utils.FileUtils;
@@ -24,6 +25,7 @@ import javax.servlet.http.Part;
 import java.io.File;
 import java.io.IOException;
 import java.net.URLClassLoader;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -49,15 +51,17 @@ public class Api implements RouteGroup {
     private static final String TEXT_PLAIN = "text/plain";
 
     protected static Logger log = LoggerFactory.getLogger(Api.class);
+
     protected static Collection<Option> with = ImmutableList.of(Option.FLATTENED_ENUMS, Option.SIMPLIFIED_ENUMS, Option.DEFINITIONS_FOR_ALL_OBJECTS);
     protected static Collection<Option> without = null;
+
     private static ZipUtils zipUtils = new ZipUtils();
     private static JarUtils jarUtils = new JarUtils();
 
     @Override
     public void addRoutes() {
-        //before(Commons.EMPTY_PATH, Commons.genericFilter);
-        //before(Commons.EMPTY_PATH, Commons.apiFilter);
+        //before(Commons.EMPTY_PATH + "*", Commons.genericFilter);
+        //before(Commons.EMPTY_PATH + "*", Commons.apiFilter);
         get(Commons.EMPTY_PATH, buildRoute(new BeanBuilder().title(BRAAS + BREADCRUMBS_SEPARATOR + API), "/api"), engine);
         post(JSON_SCHEMA, (request, response) -> {
             final SparkWebContext ctx = new SparkWebContext(request, response);
@@ -124,8 +128,8 @@ public class Api implements RouteGroup {
             }
             return EMPTY_RESPONSE;
         });
-        before(ASSETS, ApiController::setNamespace);
-        post(ASSETS, (request, response) -> {
+        before(Api.RULES_BASE + BRAAS_SESSION_ID_PATH_PARAM + ASSETS, ApiController::setNamespace);
+        post(Api.RULES_BASE + BRAAS_SESSION_ID_PATH_PARAM + ASSETS, (request, response) -> {
             final SparkWebContext ctx = new SparkWebContext(request, response);
             Locale locale = Locale.ENGLISH;
             String localeStr = request.queryParams("locale");
@@ -136,21 +140,28 @@ public class Api implements RouteGroup {
             } catch (IllegalArgumentException ignored) {
 
             }
-            DroolsConfig droolsConfig = (DroolsConfig) ctx.getSessionAttribute("drools-config");
+            String braasSessionId = request.params(BRAAS_SESSION_ID_PARAM);
+
+            BraasDrools braasDrools = MongoAccess.getBraasDroolsById(BRAAS_DROOLS_PARAM, braasSessionId);
+            if (braasDrools == null) {
+                return Commons.throwError(response, 424, new Exception("Rule base spreadsheet is not present on request not previously provided. Make sure you provide it according to API specification [http://braaservice.com/api#/Rules_base]"));
+            } else {
+                if (braasDrools.getSpreadsheet() == null || braasDrools.getSpreadsheet().getBinary() == null) {
+                    return Commons.throwError(response, 424, new Exception("Rule base spreadsheet is not present on request not previously provided. Make sure you provide it according to API specification [http://braaservice.com/api#/Rules_base]"));
+                }
+            }
+
+            DroolsConfig droolsConfig = (DroolsConfig) ctx.getSessionAttribute(DROOLS_CONFIG_PARAM);
             if (droolsConfig == null) {
                 try {
                     ApiController.SpreadsheetBaseModel spreadsheetBaseModel = new ApiController.SpreadsheetBaseModel(ctx).invoke();
-                    File rulesDir = spreadsheetBaseModel.getRulesDir();
                     File sourceClassesDir = spreadsheetBaseModel.getSourceClassesDir();
                     File compiledClassesDir = spreadsheetBaseModel.getCompiledClassesDir();
-                    File rulesFile = new File(rulesDir, BRAAS_RULES_FILE_NAME);
-                    String rulesPath = rulesFile.getCanonicalPath();
-                    File schemaFile = new File(rulesDir, JSON_SCHEMA_FILE_NAME);
-                    URLClassLoader classLoader = ApiController.buildClassesFromSchema(schemaFile, sourceClassesDir, compiledClassesDir);
+                    URLClassLoader classLoader = ApiController.buildClassesFromSchema(braasDrools.getSchemas(), sourceClassesDir, compiledClassesDir);
                     if (classLoader != null) {
                         droolsConfig = ApiController.createDroolsConfig(
-                                rulesPath, classLoader, (DroolsConfig) ctx.getSessionAttribute("drools-config"), Constants.URL_RESOURCE_STRATEGIES.ABSOLUTE_DECISION_TABLE_PATH);
-                        ctx.setSessionAttribute("drools-config", droolsConfig);
+                                braasDrools.getSpreadsheet().getBinary(), classLoader, droolsConfig, Constants.URL_RESOURCE_STRATEGIES.ABSOLUTE_DECISION_TABLE_PATH);
+                        ctx.setSessionAttribute(DROOLS_CONFIG_PARAM, droolsConfig);
                     } else {
                         return Commons.throwError(response, HTTP_INTERNAL_ERROR, new Exception("It was not possible to load your provided schema to be used later in your rule's base"));
                     }
@@ -160,9 +171,7 @@ public class Api implements RouteGroup {
             }
             droolsConfig.setLocale(locale);
 
-            URLClassLoader classLoader = droolsConfig.getClassLoader();
-            log.info("DroolsConfig: " + jsonUtils.toJSON(droolsConfig));
-            Collection<?> results = ApiController.processAssets(droolsConfig, classLoader, request);
+            Collection<?> results = ApiController.processAssets(droolsConfig, request);
 
             if (results != null) {
                 response.status(HTTP_ACCEPTED);
@@ -179,8 +188,7 @@ public class Api implements RouteGroup {
                 String rulesPath;
                 try {
                     rulesPath = ApiController.extractSpreadSheet(request, uploadDir);
-                    byte[] result = FileUtils.readFileToByteArray(new File(rulesPath));
-                    String encoded = Base64.getEncoder().encodeToString(result);
+                    String encoded = Commons.encodeFileToBase64(rulesPath);
                     response.status(HTTP_OK);
                     response.type(TEXT_PLAIN);
                     return encoded;
@@ -196,16 +204,24 @@ public class Api implements RouteGroup {
     }
 
     public static class ApiFile extends Api implements RouteGroup {
-        public static final String PATH = Api.PATH + Api.RULES_BASE + "/file";
+        public static final String PATH = Api.PATH + Api.RULES_BASE + BRAAS_SESSION_ID_PATH_PARAM + "/file";
 
         @Override
         public void addRoutes() {
-            //before(Commons.EMPTY_PATH, Commons.genericFilter);
-            //before(Commons.EMPTY_PATH, Commons.apiFilter);
-            before(Commons.EMPTY_PATH, ApiController::setNamespace);
+            //before(Commons.EMPTY_PATH + "*", Commons.genericFilter);
+            //before(Commons.EMPTY_PATH + "*", Commons.apiFilter);
+            before(Commons.EMPTY_PATH + "*", ApiController::setNamespace);
             put(Commons.EMPTY_PATH, (request, response) -> {
                 try {
                     final SparkWebContext ctx = new SparkWebContext(request, response);
+                    String braasSessionId = request.params(BRAAS_SESSION_ID_PARAM);
+                    BraasDrools braasDrools = (BraasDrools) ctx.getSessionAttribute(BRAAS_DROOLS_PARAM);
+                    if (braasDrools == null || !braasDrools.getBraasId().equals(braasSessionId)) {
+                        braasDrools = ApiController.buildBraasDrools(braasSessionId, ctx);
+                        if (braasDrools == null) {
+                            return Commons.throwError(response, 424, new Exception("Rule base spreadsheet is not previously provided. Make sure you provide it according to API specification [http://braaservice.com/api#/Rules_base]"));
+                        }
+                    }
                     ApiController.SpreadsheetBaseModel spreadsheetBaseModel = new ApiController.SpreadsheetBaseModel(ctx).invoke();
                     File rulesDir = spreadsheetBaseModel.getRulesDir();
                     File sourceClassesDir = spreadsheetBaseModel.getSourceClassesDir();
@@ -219,7 +235,6 @@ public class Api implements RouteGroup {
                     String schemaPath;
                     try {
                         schemaPath = ApiController.extractSchema(request, rulesDir);
-                        ctx.setSessionAttribute(RULES_BASE_FILE_NAME_PARAM, rulesPath);
                     } catch (Throwable t) {
                         return Commons.throwError(response, HTTP_CONFLICT, new Exception("Json schema is not present on request. Make sure you provide it according to API specification [http://braaservice.com/api#/Rules_base/add_base]", t));
                     }
@@ -227,9 +242,19 @@ public class Api implements RouteGroup {
                     URLClassLoader classLoader = ApiController.buildClassesFromSchema(
                             schemaFile, getFileNameFromPart(request.raw().getPart(FILE_NAME_PREFIX)), sourceClassesDir, compiledClassesDir);
                     if (classLoader != null) {
-                        ctx.setSessionAttribute("drools-config", ApiController.createDroolsConfig(
-                                rulesPath, classLoader, (DroolsConfig) ctx.getSessionAttribute("drools-config"), Constants.URL_RESOURCE_STRATEGIES.ABSOLUTE_DECISION_TABLE_PATH));
-                        response.status(HTTP_CREATED);
+                        String schemas_ = FileUtils.readFileToString(schemaFile, StandardCharsets.UTF_8);
+                        braasDrools.setSchemas(schemas_);
+                        BraasDrools.Spreadsheet spreadsheet_ = new BraasDrools.Spreadsheet();
+                        spreadsheet_.setBinary(encodeFileToBase64(rulesPath));
+                        braasDrools.setSpreadsheet(spreadsheet_);
+                        BraasDrools braasDrools_ = MongoAccess.updateBraasDrools(BRAAS_DROOLS_PARAM, braasDrools);
+                        if (braasDrools_ != null) {
+                            ctx.setSessionAttribute(DROOLS_CONFIG_PARAM, null);
+                            ctx.setSessionAttribute(BRAAS_DROOLS_PARAM, braasDrools_);
+                            response.status(HTTP_CREATED);
+                        } else {
+                            return Commons.throwError(response, HTTP_INTERNAL_ERROR, new Exception("It was not possible to load your provided schema to be used later in your rule's base"));
+                        }
                     } else {
                         return Commons.throwError(response, HTTP_INTERNAL_ERROR, new Exception("It was not possible to load your provided schema to be used later in your rule's base"));
                     }
@@ -268,28 +293,28 @@ public class Api implements RouteGroup {
     }
 
     public static class ApiGoogleDrive extends Api implements RouteGroup {
-        public static final String PATH = Api.PATH + Api.RULES_BASE + "/google-drive";
+        public static final String PATH = Api.PATH + Api.RULES_BASE + BRAAS_SESSION_ID_PATH_PARAM + "/google-drive";
 
         @Override
         public void addRoutes() {
             /*
-            //before(Commons.EMPTY_PATH, Commons.genericFilter);
-            //before(Commons.EMPTY_PATH, Commons.apiFilter);
+            //before(Commons.EMPTY_PATH + "*", Commons.genericFilter);
+            //before(Commons.EMPTY_PATH + "*", Commons.apiFilter);
             */
-            before(Commons.EMPTY_PATH, ApiController::setNamespace);
+            before(Commons.EMPTY_PATH + "*", ApiController::setNamespace);
         }
     }
 
     public static class ApiBinary extends Api implements RouteGroup {
-        public static final String PATH = Api.PATH + Api.RULES_BASE + "/binary";
+        public static final String PATH = Api.PATH + Api.RULES_BASE + BRAAS_SESSION_ID_PATH_PARAM + "/binary";
 
         @Override
         public void addRoutes() {
             /*
-            //before(Commons.EMPTY_PATH, Commons.genericFilter);
-            //before(Commons.EMPTY_PATH, Commons.apiFilter);
+            //before(Commons.EMPTY_PATH + "*", Commons.genericFilter);
+            //before(Commons.EMPTY_PATH + "*", Commons.apiFilter);
             */
-            before(Commons.EMPTY_PATH, ApiController::setNamespace);
+            before(Commons.EMPTY_PATH + "*", ApiController::setNamespace);
             put(Commons.EMPTY_PATH, (request, response) -> {
                 try {
                     final SparkWebContext ctx = new SparkWebContext(request, response);
@@ -298,21 +323,21 @@ public class Api implements RouteGroup {
                     File sourceClassesDir = spreadsheetBaseModel.getSourceClassesDir();
                     File compiledClassesDir = spreadsheetBaseModel.getCompiledClassesDir();
                     String rulesPath;
-                    Binary binary;
+                    BraasDrools braasDrools;
                     try {
-                        binary = ApiController.extractBinary(request);
+                        braasDrools = ApiController.extractBinary(request);
                     } catch (Throwable t) {
                         return Commons.throwError(response, HTTP_CONFLICT, new Exception("Incoming body doesn't match with required object structure. Make sure you provide it according to API specification [http://braaservice.com/api#/Rules_base/add-or-replace-binary-rules-base]", t));
                     }
                     try {
                         String fileName = ctx.getSessionAttribute(BRAAS_SESSION_ID_PARAM) + SPREADSHEET_FILE_EXTENSION;
-                        rulesPath = ApiController.extractSpreadSheetFromBinary(binary, rulesDir, fileName);
+                        rulesPath = ApiController.extractSpreadSheetFromBinary(braasDrools, rulesDir, fileName);
                     } catch (Throwable t) {
                         return Commons.throwError(response, HTTP_CONFLICT, new Exception("Incoming body doesn't match with required object structure. Make sure you provide it according to API specification [http://braaservice.com/api#/Rules_base/add-or-replace-binary-rules-base]", t));
                     }
                     String schemaPath;
                     try {
-                        schemaPath = ApiController.extractSchemaFromBinary(binary, rulesDir);
+                        schemaPath = ApiController.extractSchemaFromBinary(braasDrools, rulesDir);
                         ctx.setSessionAttribute(RULES_BASE_FILE_NAME_PARAM, rulesPath);
                     } catch (Throwable t) {
                         return Commons.throwError(response, HTTP_CONFLICT, new Exception("Json schema is not present on request or it is invalid. Make sure you provide it according to API specification [http://braaservice.com/api#/Rules_base/add-or-replace-binary-rules-base]", t));
@@ -320,8 +345,8 @@ public class Api implements RouteGroup {
                     File schemaFile = new File(schemaPath);
                     URLClassLoader classLoader = ApiController.buildClassesFromSchema(schemaFile, sourceClassesDir, compiledClassesDir);
                     if (classLoader != null) {
-                        ctx.setSessionAttribute("drools-config", ApiController.createDroolsConfig(
-                                rulesPath, classLoader, (DroolsConfig) ctx.getSessionAttribute("drools-config"), Constants.URL_RESOURCE_STRATEGIES.ABSOLUTE_DECISION_TABLE_PATH));
+                        ctx.setSessionAttribute(DROOLS_CONFIG_PARAM, ApiController.createDroolsConfig(
+                                rulesPath, classLoader, (DroolsConfig) ctx.getSessionAttribute(DROOLS_CONFIG_PARAM), Constants.URL_RESOURCE_STRATEGIES.ABSOLUTE_DECISION_TABLE_PATH));
                         response.status(HTTP_CREATED);
                     } else {
                         return Commons.throwError(response, HTTP_INTERNAL_ERROR, new Exception("It was not possible to load your provided schema to be used later in your rule's base"));

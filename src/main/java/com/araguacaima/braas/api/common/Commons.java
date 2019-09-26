@@ -5,7 +5,7 @@ import com.araguacaima.braas.api.ConfigFactory;
 import com.araguacaima.braas.api.MessagesWrapper;
 import com.araguacaima.braas.api.Server;
 import com.araguacaima.braas.api.filter.SessionFilter;
-import com.araguacaima.braas.api.model.Binary;
+import com.araguacaima.braas.api.model.BraasDrools;
 import com.araguacaima.braas.api.wrapper.AccountWrapper;
 import com.araguacaima.braas.api.wrapper.RolesWrapper;
 import com.araguacaima.braas.core.drools.DroolsConfig;
@@ -86,12 +86,16 @@ public class Commons {
     public static final String SEPARATOR_PATH = "/";
     public static final String REJECTED_SCOPES = "rejected_scopes";
 
-    public static final String TEMP_DIR_PARAM = "tmp";
+    public static final String TEMP_DIR = "tmp";
+    public static final String TEMP_DIR_PARAM = "tempDir";
     public static final String UPLOAD_DIR = "upload";
     public static final String RULES_DIR = "rules";
     public static final String SOURCE_CLASSES_DIR = "source-classes";
     public static final String COMPILED_CLASSES_DIR = "compiled-classes";
     public static final String BRAAS_SESSION_ID_PARAM = "braasSessionId";
+    public static final String BRAAS_SESSION_ID_PATH_PARAM = "/:" + BRAAS_SESSION_ID_PARAM;
+    public static final String BRAAS_DROOLS_PARAM = "braasDrools";
+    public static final String DROOLS_CONFIG_PARAM = "drools-config";
     public static final String UPLOAD_DIR_PARAM = "uploadDir";
     public static final String RULES_DIR_PARAM = "rulesDir";
     public static final String SOURCE_CLASSES_DIR_PARAM = "sourceClassesDir";
@@ -493,9 +497,9 @@ public class Commons {
         return out.toFile().getCanonicalPath();
     }
 
-    public static String storeFileAndGetPathFromBinary(Binary binarySpreadsheet, File directory, String fileName) throws IOException {
+    public static String storeFileAndGetPathFromBinary(BraasDrools braasDroolsSpreadsheet, File directory, String fileName) throws IOException {
         File file = new File(directory, fileName);
-        FileUtils.writeByteArrayToFile(file, binarySpreadsheet.getBinary_());
+        FileUtils.writeByteArrayToFile(file, braasDroolsSpreadsheet.getBinary_());
         return file.getCanonicalPath();
     }
 
@@ -520,6 +524,19 @@ public class Commons {
     public enum InputOutput {
         input,
         output
+    }
+
+    public static String encodeFileToBase64(String fileName) throws IOException {
+        return encodeFileToBase64(new File(fileName));
+    }
+
+    public static String encodeFileToBase64(File file) throws IOException {
+        byte[] result = FileUtils.readFileToByteArray(file);
+        return encodeFileToBase64(result);
+    }
+
+    public static String encodeFileToBase64(byte[] result) {
+        return Base64.getEncoder().encodeToString(result);
     }
 
 }

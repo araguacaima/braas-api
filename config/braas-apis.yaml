@@ -20,7 +20,7 @@ schemes:
 - http
 - https
 paths:
-  /api/rules-base/file:
+  /api/rules-base/{braasSessionId}/file:
     get:
       tags:
       - Rules base
@@ -73,6 +73,8 @@ paths:
          description: Invalid input
         409:
           description: Conflict
+        424:
+          description: Missing dependencies
       security:
         - braas-auth:
           - write:rule
@@ -95,7 +97,7 @@ paths:
         - braas-auth:
           - delete:rule
         - braas-session-id: []
-  #  /api/rules-base/google-drive:
+  #  /api/rules-base/{braasSessionId}/google-drive:
   #    get:
   #      tags:
   #        - Rules base
@@ -141,6 +143,8 @@ paths:
   #          description: Invalid input
   #        409:
   #          description: Conflict
+  #        424:
+  #          description: Missing dependencies
   #      security:
   #        - braas-auth:
   #            - write:rule
@@ -163,7 +167,7 @@ paths:
   #        - braas-auth:
   #            - delete:rule
   #        - braas-session-id: []
-  /api/rules-base/binary:
+  /api/rules-base/{braasSessionId}/binary:
     get:
       tags:
         - Rules base
@@ -210,6 +214,8 @@ paths:
           description: Invalid input
         409:
           description: Conflict
+        424:
+          description: Missing dependencies
       security:
         - braas-auth:
             - write:rule
@@ -232,7 +238,7 @@ paths:
         - braas-auth:
             - delete:rule
         - braas-session-id: []
-  /api/assets:
+  /api/rules-base/{braasSessionId}/assets:
     post:
       tags:
         - Rules Engine Execution
@@ -343,7 +349,7 @@ securityDefinitions:
 parameters:
   braas-session:
     name: braasSessionId
-    in: query
+    in: path
     type: string
     required: false
     description: Desired session-id that consumer what's to use in order to identify its namespace. If absent an arbitrary and temporary UUID will be generated.

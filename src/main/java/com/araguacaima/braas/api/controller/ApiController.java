@@ -1,7 +1,7 @@
 package com.araguacaima.braas.api.controller;
 
 import com.araguacaima.braas.api.exception.InternalBraaSException;
-import com.araguacaima.braas.api.model.Binary;
+import com.araguacaima.braas.api.model.BraasDrools;
 import com.araguacaima.braas.core.Constants;
 import com.araguacaima.braas.core.drools.DroolsConfig;
 import com.araguacaima.braas.core.drools.DroolsURLClassLoader;
@@ -26,15 +26,12 @@ import spark.utils.CollectionUtils;
 
 import javax.servlet.ServletException;
 import java.io.File;
-import java.io.FileNotFoundException;
 import java.io.IOException;
-import java.net.MalformedURLException;
 import java.net.URISyntaxException;
 import java.net.URLClassLoader;
 import java.nio.charset.StandardCharsets;
 import java.util.*;
 
-import static com.araguacaima.braas.api.Server.environment;
 import static com.araguacaima.braas.api.Server.multipartConfigElement;
 import static com.araguacaima.braas.api.common.Commons.*;
 import static com.araguacaima.braas.core.drools.utils.RuleMessageUtils.getMessages;
@@ -42,6 +39,20 @@ import static com.araguacaima.braas.core.drools.utils.RuleMessageUtils.getMessag
 public class ApiController {
 
     private static Logger log = LoggerFactory.getLogger(ApiController.class);
+
+    public static URLClassLoader buildClassesFromSchema(String json, File sourceClassesDir, File compiledClassesDir) throws InternalBraaSException {
+        URLClassLoader classLoader;
+        try {
+            classLoader = new DroolsURLClassLoader(compiledClassesDir.toURI().toURL(), KieBase.class.getClassLoader());
+            JsonSchemaUtils<URLClassLoader> jsonSchemaUtils = new JsonSchemaUtils<>(classLoader);
+            if (StringUtils.isNotBlank(json)) {
+                classLoader = jsonSchemaUtils.processFile_(json, null, sourceClassesDir, compiledClassesDir);
+            }
+        } catch (URISyntaxException | NoSuchFieldException | IllegalAccessException | IOException e) {
+            throw new InternalBraaSException(e);
+        }
+        return classLoader;
+    }
 
     public static URLClassLoader buildClassesFromSchema(File schemaFile, File sourceClassesDir, File compiledClassesDir) throws InternalBraaSException {
         URLClassLoader classLoader;
@@ -89,23 +100,31 @@ public class ApiController {
         return classLoader;
     }
 
-    public static DroolsConfig createDroolsConfig(String rulesPath, URLClassLoader classLoader, DroolsConfig droolsConfig, Constants.URL_RESOURCE_STRATEGIES urlResourceStrategies) throws InternalBraaSException {
+    public static DroolsConfig createDroolsConfig(String base64BinarySpreadsheet, URLClassLoader classLoader, DroolsConfig droolsConfig, Constants.URL_RESOURCE_STRATEGIES urlResourceStrategies) throws InternalBraaSException {
         try {
-            if (StringUtils.isNotBlank(rulesPath) && droolsConfig == null) {
-                Properties props = new PropertiesHandler("drools-absolute-path-decision-table.properties", ApiController.class.getClassLoader()).getProperties();
-                props.setProperty("decision.table.path", rulesPath);
+            if (StringUtils.isNotBlank(base64BinarySpreadsheet) && droolsConfig == null) {
+                Properties props;
+                switch (urlResourceStrategies) {
+                    case ABSOLUTE_DECISION_TABLE_PATH:
+                        props = new PropertiesHandler("drools-absolute-path-decision-table.properties", ApiController.class.getClassLoader()).getProperties();
+                        break;
+                    default:
+                        props = new Properties();
+                }
                 droolsConfig = new DroolsConfig(props);
+                droolsConfig.setSpreadsheetStreamFromString(base64BinarySpreadsheet);
+                droolsConfig.setUrlResourceStrategy(Constants.URL_RESOURCE_STRATEGIES.STREAM_DECISION_TABLE.name());
             }
             droolsConfig.setClassLoader(classLoader);
-        } catch (FileNotFoundException | MalformedURLException | URISyntaxException | PropertiesUtilException e) {
+        } catch (URISyntaxException | PropertiesUtilException | IOException e) {
             throw new InternalBraaSException(e);
         }
         return droolsConfig;
     }
 
-    public static Collection<?> processAssets(DroolsConfig droolsConfig, URLClassLoader classLoader, Request request) throws Exception {
+    public static Collection<?> processAssets(DroolsConfig droolsConfig, Request request) throws Exception {
         Collection<?> results = null;
-        if (droolsConfig != null && classLoader != null) {
+        if (droolsConfig != null) {
             DroolsUtils droolsUtils = new DroolsUtils(droolsConfig);
             Map<String, Object> globals = new HashMap<>();
             Locale locale = droolsConfig.getLocale();
@@ -116,7 +135,7 @@ public class ApiController {
             }
             globals.put("logger", log);
             droolsUtils.addGlobals(globals);
-            Object assets = extractAssets(request, classLoader);
+            Object assets = extractAssets(request, droolsConfig.getClassLoader());
             results = getMessages(droolsUtils.executeRules(assets), locale);
         }
         return results;
@@ -188,7 +207,7 @@ public class ApiController {
             FileUtils.writeStringToFile(file, schema, StandardCharsets.UTF_8);
             schemaPath = file.getCanonicalPath();
         } catch (Throwable ignored) {
-            schemaPath = storeFileAndGetPathFromMultipart(request, "schema-file", rulesDir, BRAAS_RULES_FILE_NAME);
+            schemaPath = storeFileAndGetPathFromMultipart(request, "schema-file", rulesDir, JSON_SCHEMA_FILE_NAME);
         }
         log.debug("Schema path '" + schemaPath + "' loaded!");
         return schemaPath;
@@ -200,31 +219,31 @@ public class ApiController {
         return rulesPath;
     }
 
-    public static Binary extractBinary(Request request) throws InternalBraaSException {
+    public static BraasDrools extractBinary(Request request) throws InternalBraaSException {
         try {
-            return jsonUtils.fromJSON(request.body(), Binary.class);
+            return jsonUtils.fromJSON(request.body(), BraasDrools.class);
         } catch (Throwable e) {
             throw new InternalBraaSException(e.getMessage());
         }
     }
 
-    public static String extractSpreadSheetFromBinary(Binary binarySpreadsheet, File rulesDir, String fileName) throws IOException {
-        String rulesPath = storeFileAndGetPathFromBinary(binarySpreadsheet, rulesDir, fileName);
+    public static String extractSpreadSheetFromBinary(BraasDrools braasDroolsSpreadsheet, File rulesDir, String fileName) throws IOException {
+        String rulesPath = storeFileAndGetPathFromBinary(braasDroolsSpreadsheet, rulesDir, fileName);
         log.debug("Rule's base '" + rulesPath + "' loaded!");
         return rulesPath;
     }
 
-    public static String extractSchemaFromBinary(Binary binarySpreadsheet, File rulesDir) throws InternalBraaSException {
+    public static String extractSchemaFromBinary(BraasDrools braasDrools, File rulesDir) throws InternalBraaSException {
         String schemaPath;
         try {
             String schema;
-            Collection schemaArray = binarySpreadsheet.getSchemaArray();
+            Collection schemaArray = braasDrools.getSchemaArray();
             if (CollectionUtils.isNotEmpty(schemaArray)) {
                 schema = jsonUtils.toJSON(schemaArray);
             } else {
-                String schema_ = jsonUtils.toJSON(binarySpreadsheet.getSchemaMap());
+                String schema_ = jsonUtils.toJSON(braasDrools.getSchemaMap());
                 if (schema_ == null) {
-                    schema = jsonUtils.toJSON(binarySpreadsheet.getSchemas());
+                    schema = jsonUtils.toJSON(braasDrools.getSchemas());
                 } else {
                     schema = schema_;
                 }
@@ -240,77 +259,34 @@ public class ApiController {
         return schemaPath;
     }
 
+    public static BraasDrools fixNamespace(String braasSessionId) {
+        BraasDrools braasDrools = MongoAccess.getBraasDroolsById(BRAAS_DROOLS_PARAM, braasSessionId);
+        if (braasDrools == null) {
+            BraasDrools newBraasDrools = new BraasDrools();
+            newBraasDrools.setBraasId(braasSessionId);
+            braasDrools = MongoAccess.storeBraasDrools(BRAAS_DROOLS_PARAM, newBraasDrools);
+        }
+        return braasDrools;
+    }
+
     public static void setNamespace(Request request, Response response) throws IOException, ServletException {
         String braasSessionId = request.queryParams(BRAAS_SESSION_ID_PARAM);
+        if (StringUtils.isBlank(braasSessionId)) {
+            braasSessionId = request.params(BRAAS_SESSION_ID_PARAM);
+        }
         final SparkWebContext ctx = new SparkWebContext(request, response);
-        String storedSessionId;
+        BraasDrools braasDrools;
         if (braasSessionId != null) {
-            ctx.setSessionAttribute(BRAAS_SESSION_ID_PARAM, braasSessionId);
-            storedSessionId = braasSessionId;
+            braasDrools = buildBraasDrools(braasSessionId, ctx);
         } else {
-            storedSessionId = (String) ctx.getSessionAttribute(BRAAS_SESSION_ID_PARAM);
-        }
-        if (org.apache.commons.lang3.StringUtils.isBlank(braasSessionId)) {
-            braasSessionId = request.cookie(BRAAS_SESSION_ID_PARAM);
-            if (org.apache.commons.lang3.StringUtils.isBlank(braasSessionId)) {
-                braasSessionId = UUID.randomUUID().toString();
-                response.cookie(BRAAS_SESSION_ID_PARAM, braasSessionId, 86400, true);
-            }
-        }
-
-        if (org.apache.commons.lang3.StringUtils.isBlank(braasSessionId)) {
             braasSessionId = UUID.randomUUID().toString();
-        }
-        File tempDir = null;
-        String namespacesFilePath = StringUtils.defaultIfBlank(environment.get("NAMESPACES_FULL_PATH"), System.getProperty("java.io.tmpdir"));
-        if (org.apache.commons.lang3.StringUtils.isNotBlank(storedSessionId)) {
-            File baseDir = new File(namespacesFilePath);
-            tempDir = new File(baseDir, braasSessionId);
-        }
-
-        if (org.apache.commons.lang3.StringUtils.isBlank(storedSessionId) || tempDir == null || !tempDir.exists()) {
-            File baseDir = new File(namespacesFilePath);
-            tempDir = new File(baseDir, braasSessionId);
-            if (!tempDir.exists()) {
-                tempDir = FileUtils.createTempDir(braasSessionId);
-            }
-            //tempDir.deleteOnExit();
-            File uploadPath = new File(tempDir, UPLOAD_DIR);
-            uploadPath.mkdir();
-            //uploadPath.deleteOnExit();
-            File rulesPath = new File(tempDir, RULES_DIR);
-            rulesPath.mkdir();
-            //rulesPath.deleteOnExit();
-            File sourceClassesPath = new File(tempDir, SOURCE_CLASSES_DIR);
-            sourceClassesPath.mkdir();
-            //sourceClassesPath.deleteOnExit();
-            sourceClassesPath.setReadable(true);
-            sourceClassesPath.setWritable(true);
-            File compiledClassesPath = new File(tempDir, COMPILED_CLASSES_DIR);
-            compiledClassesPath.mkdir();
-            //compiledClassesPath.deleteOnExit();
-            compiledClassesPath.setReadable(true);
-            compiledClassesPath.setWritable(true);
-            ctx.setSessionAttribute(UPLOAD_DIR_PARAM, uploadPath);
-            ctx.setSessionAttribute(RULES_DIR_PARAM, rulesPath);
-            ctx.setSessionAttribute(SOURCE_CLASSES_DIR_PARAM, sourceClassesPath);
-            ctx.setSessionAttribute(COMPILED_CLASSES_DIR_PARAM, compiledClassesPath);
             ctx.setSessionAttribute(BRAAS_SESSION_ID_PARAM, braasSessionId);
-        } else {
-            if (ctx.getSessionAttribute(UPLOAD_DIR_PARAM) == null) {
-                ctx.setSessionAttribute(UPLOAD_DIR_PARAM, new File(tempDir, UPLOAD_DIR));
+            braasDrools = (BraasDrools) ctx.getSessionAttribute(BRAAS_DROOLS_PARAM);
+            if (braasDrools == null) {
+                braasDrools = fixNamespace(braasSessionId);
             }
-            if (ctx.getSessionAttribute(RULES_DIR_PARAM) == null) {
-                ctx.setSessionAttribute(RULES_DIR_PARAM, new File(tempDir, RULES_DIR));
-            }
-            if (ctx.getSessionAttribute(SOURCE_CLASSES_DIR_PARAM) == null) {
-                ctx.setSessionAttribute(SOURCE_CLASSES_DIR_PARAM, new File(tempDir, SOURCE_CLASSES_DIR));
-            }
-            if (ctx.getSessionAttribute(COMPILED_CLASSES_DIR_PARAM) == null) {
-                ctx.setSessionAttribute(COMPILED_CLASSES_DIR_PARAM, new File(tempDir, COMPILED_CLASSES_DIR));
-            }
-            ctx.setSessionAttribute(BRAAS_SESSION_ID_PARAM, braasSessionId);
         }
+        ctx.setSessionAttribute(BRAAS_DROOLS_PARAM, braasDrools);
         String contentType = org.apache.commons.lang3.StringUtils.defaultIfBlank(request.headers("Content-Type"), "");
         if (contentType.startsWith("multipart/form-data") || contentType.startsWith("application/x-www-form-urlencoded")) {
             request.raw().setAttribute("org.eclipse.jetty.multipartConfig", multipartConfigElement);
@@ -329,6 +305,21 @@ public class ApiController {
         } else {
             log.info("Request for : " + request.requestMethod() + " " + request.uri());
         }
+    }
+
+    public static BraasDrools buildBraasDrools(String braasSessionId, SparkWebContext ctx) {
+        BraasDrools braasDrools;
+        String storedBraasSessionId = (String) ctx.getSessionAttribute(BRAAS_SESSION_ID_PARAM);
+        if (!braasSessionId.equals(storedBraasSessionId)) {
+            ctx.setSessionAttribute(BRAAS_SESSION_ID_PARAM, braasSessionId);
+            braasDrools = fixNamespace(braasSessionId);
+        } else {
+            braasDrools = (BraasDrools) ctx.getSessionAttribute(BRAAS_DROOLS_PARAM);
+            if (braasDrools == null) {
+                braasDrools = fixNamespace(braasSessionId);
+            }
+        }
+        return braasDrools;
     }
 
     public static class SpreadsheetBaseModel {
@@ -359,10 +350,35 @@ public class ApiController {
         }
 
         public SpreadsheetBaseModel invoke() {
-            rulesDir = (File) ctx.getSessionAttribute(RULES_DIR_PARAM);
-            sourceClassesDir = (File) ctx.getSessionAttribute(SOURCE_CLASSES_DIR_PARAM);
-            compiledClassesDir = (File) ctx.getSessionAttribute(COMPILED_CLASSES_DIR_PARAM);
-            uploadDir = (File) ctx.getSessionAttribute(UPLOAD_DIR_PARAM);
+            String braasSessionId = (String) ctx.getSessionAttribute(BRAAS_SESSION_ID_PARAM);
+            File tempFile = new File(System.getProperty("java.io.tmpdir"), braasSessionId);
+            if (!tempFile.exists()) {
+                tempFile = FileUtils.createTempDir(braasSessionId);
+            }
+            rulesDir = new File(tempFile, RULES_DIR);
+            rulesDir.mkdir();
+            rulesDir.setReadable(true);
+            rulesDir.setWritable(true);
+            rulesDir.deleteOnExit();
+
+            sourceClassesDir = new File(tempFile, SOURCE_CLASSES_DIR);
+            sourceClassesDir.mkdir();
+            sourceClassesDir.setReadable(true);
+            sourceClassesDir.setWritable(true);
+            sourceClassesDir.deleteOnExit();
+
+            compiledClassesDir = new File(tempFile, COMPILED_CLASSES_DIR);
+            compiledClassesDir.mkdir();
+            compiledClassesDir.setReadable(true);
+            compiledClassesDir.setWritable(true);
+            compiledClassesDir.deleteOnExit();
+
+            uploadDir = new File(tempFile, UPLOAD_DIR);
+            uploadDir.mkdir();
+            uploadDir.setReadable(true);
+            uploadDir.setWritable(true);
+            uploadDir.deleteOnExit();
+
             return this;
         }
     }

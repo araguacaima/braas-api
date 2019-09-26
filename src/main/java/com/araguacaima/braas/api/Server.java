@@ -49,6 +49,7 @@ public class Server {
             Map<String, String> map = MapUtils.fromProperties(properties);
             if (!map.isEmpty()) {
                 log.info("Properties taken from config file '" + url.getFile().replace("file:" + File.separator, "") + "'");
+                environment.putAll(map);
             } else {
                 log.info("Properties taken from system map...");
             }
@@ -82,8 +83,8 @@ public class Server {
         port(assignedPort);
         //secure("deploy/keystore.jks", "password", null, null);
         staticFiles.location("/web/public");
-        staticFiles.externalLocation(TEMP_DIR_PARAM);
-        multipartConfigElement = new MultipartConfigElement("/" + TEMP_DIR_PARAM);
+        staticFiles.externalLocation(TEMP_DIR);
+        multipartConfigElement = new MultipartConfigElement("/" + TEMP_DIR);
         before((request, response) -> {
             response.header("Access-Control-Allow-Origin", "*");
             response.header("Access-Control-Request-Method", "*");

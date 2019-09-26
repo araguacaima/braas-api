@@ -28,6 +28,8 @@ public class BraasDroolsDeserializer extends StdDeserializer<BraasDrools> {
             if (nodeId != null) {
                 ObjectId id = new ObjectId(nodeId.asText());
                 braasDrools.setId(id);
+            } else {
+                braasDrools.setId(null);
             }
             JsonNode braasIdNode = node.get("braasId");
             if (braasIdNode != null) {

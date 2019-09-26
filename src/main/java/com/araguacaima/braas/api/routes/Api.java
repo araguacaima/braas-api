@@ -131,7 +131,7 @@ public class Api implements RouteGroup {
         before(Api.RULES_BASE + BRAAS_SESSION_ID_PATH_PARAM + ASSETS, ApiController::setNamespace);
         post(Api.RULES_BASE + BRAAS_SESSION_ID_PATH_PARAM + ASSETS, (request, response) -> {
             final SparkWebContext ctx = new SparkWebContext(request, response);
-            Locale locale = Locale.ENGLISH;
+            Locale locale = null;
             String localeStr = request.queryParams("locale");
             try {
                 if (StringUtils.isNotBlank(localeStr)) {

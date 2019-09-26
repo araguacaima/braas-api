@@ -486,15 +486,22 @@ public class Commons {
         return IOUtils.toString(part.getInputStream(), StandardCharsets.UTF_8);
     }
 
+    public static String storeFileAndGetPathFromMultipart(Request request, String partName, File directory) throws IOException, ServletException {
+        return storeFileAndGetPathFromMultipart(request, partName, directory, null);
+    }
+
     public static String storeFileAndGetPathFromMultipart(Request request, String partName, File directory, String fileName) throws IOException, ServletException {
         HttpServletRequest raw = request.raw();
         raw.setAttribute("org.eclipse.jetty.multipartConfig", multipartConfigElement);
-        Part uploadedFile = raw.getPart(partName);
+        Part uploadedFilePart = raw.getPart(partName);
+        if (fileName == null) {
+            fileName = getFileNameFromPart(uploadedFilePart);
+        }
         Path out = Paths.get(directory.getCanonicalPath() + "/" + fileName);
-        try (final InputStream in = uploadedFile.getInputStream()) {
+        try (final InputStream in = uploadedFilePart.getInputStream()) {
             Files.copy(in, out, StandardCopyOption.REPLACE_EXISTING);
         }
-        uploadedFile = null;
+        uploadedFilePart = null;
         return out.toFile().getCanonicalPath();
     }
 
@@ -533,6 +540,13 @@ public class Commons {
 
     public static String encodeFileToBase64(byte[] result) {
         return Base64.getEncoder().encodeToString(result);
+    }
+
+    public static String getFileExtension(File file) {
+        String fileName = file.getName();
+        if (fileName.lastIndexOf(".") != -1 && fileName.lastIndexOf(".") != 0)
+            return fileName.substring(fileName.lastIndexOf(".") + 1);
+        else return "";
     }
 
     public enum InputOutput {

@@ -285,6 +285,22 @@ public class ApiController {
         return braasDrools;
     }
 
+    public static void setLocalEnvironment(Request request, Response response) throws IOException, ServletException {
+        String braasSessionId = request.queryParams(BRAAS_SESSION_ID_PARAM);
+        if (StringUtils.isBlank(braasSessionId)) {
+            braasSessionId = request.params(BRAAS_SESSION_ID_PARAM);
+        }
+        final SparkWebContext ctx = new SparkWebContext(request, response);
+        if (braasSessionId == null) {
+            braasSessionId = (String) ctx.getSessionAttribute(BRAAS_SESSION_ID_PARAM);
+            if (braasSessionId == null) {
+                braasSessionId = UUID.randomUUID().toString();
+            }
+        }
+        ctx.setSessionAttribute(BRAAS_SESSION_ID_PARAM, braasSessionId);
+        enableMultipart(request);
+    }
+
     public static void setNamespace(Request request, Response response) throws IOException, ServletException {
         String braasSessionId = request.queryParams(BRAAS_SESSION_ID_PARAM);
         if (StringUtils.isBlank(braasSessionId)) {
@@ -295,7 +311,10 @@ public class ApiController {
         if (braasSessionId != null) {
             braasDrools = buildBraasDrools(braasSessionId, ctx);
         } else {
-            braasSessionId = UUID.randomUUID().toString();
+            braasSessionId = (String) ctx.getSessionAttribute(BRAAS_SESSION_ID_PARAM);
+            if (braasSessionId == null) {
+                braasSessionId = UUID.randomUUID().toString();
+            }
             ctx.setSessionAttribute(BRAAS_SESSION_ID_PARAM, braasSessionId);
             braasDrools = (BraasDrools) ctx.getSessionAttribute(BRAAS_DROOLS_PARAM);
             if (braasDrools == null) {
@@ -303,6 +322,10 @@ public class ApiController {
             }
         }
         ctx.setSessionAttribute(BRAAS_DROOLS_PARAM, braasDrools);
+        enableMultipart(request);
+    }
+
+    private static void enableMultipart(Request request) throws IOException, ServletException {
         String contentType = org.apache.commons.lang3.StringUtils.defaultIfBlank(request.headers("Content-Type"), "");
         if (contentType.startsWith("multipart/form-data") || contentType.startsWith("application/x-www-form-urlencoded")) {
             request.raw().setAttribute("org.eclipse.jetty.multipartConfig", multipartConfigElement);
@@ -338,14 +361,13 @@ public class ApiController {
         return braasDrools;
     }
 
-    public static class SpreadsheetBaseModel {
+    public static class RuleBaseModel {
         private final SparkWebContext ctx;
         private File rulesDir;
         private File sourceClassesDir;
         private File compiledClassesDir;
-        private File uploadDir;
 
-        public SpreadsheetBaseModel(SparkWebContext ctx) {
+        public RuleBaseModel(SparkWebContext ctx) {
             this.ctx = ctx;
         }
 
@@ -361,11 +383,7 @@ public class ApiController {
             return compiledClassesDir;
         }
 
-        public File getUploadDir() {
-            return uploadDir;
-        }
-
-        public SpreadsheetBaseModel invoke() {
+        public RuleBaseModel invoke() {
             String braasSessionId = (String) ctx.getSessionAttribute(BRAAS_SESSION_ID_PARAM);
             File tempFile = new File(System.getProperty("java.io.tmpdir"), braasSessionId);
             if (!tempFile.exists()) {
@@ -388,6 +406,31 @@ public class ApiController {
             compiledClassesDir.setReadable(true);
             compiledClassesDir.setWritable(true);
             compiledClassesDir.deleteOnExit();
+
+            return this;
+        }
+    }
+
+    public static class UploadModel {
+        private final SparkWebContext ctx;
+        private File uploadDir;
+
+        public UploadModel(SparkWebContext ctx) {
+            this.ctx = ctx;
+        }
+
+
+        public File getUploadDir() {
+            return uploadDir;
+        }
+
+        public UploadModel invoke() {
+            String braasSessionId = (String) ctx.getSessionAttribute(BRAAS_SESSION_ID_PARAM);
+            File tempFile = new File(System.getProperty("java.io.tmpdir"), braasSessionId);
+            if (!tempFile.exists()) {
+                tempFile = FileUtils.createTempDir(braasSessionId);
+            }
+
 
             uploadDir = new File(tempFile, UPLOAD_DIR);
             uploadDir.mkdir();

@@ -63,16 +63,18 @@ public class Api implements RouteGroup {
         //before(Commons.EMPTY_PATH + "*", Commons.genericFilter);
         //before(Commons.EMPTY_PATH + "*", Commons.apiFilter);
         get(Commons.EMPTY_PATH, buildRoute(new BeanBuilder().title(BRAAS + BREADCRUMBS_SEPARATOR + API), "/api"), engine);
+        before(JSON_SCHEMA, ApiController::setLocalEnvironment);
         post(JSON_SCHEMA, (request, response) -> {
             final SparkWebContext ctx = new SparkWebContext(request, response);
-            File uploadDir = (File) ctx.getSessionAttribute(UPLOAD_DIR_PARAM);
+            ApiController.UploadModel uploadModel = new ApiController.UploadModel(ctx).invoke();
+            File uploadDir = uploadModel.getUploadDir();
             String classesPath = null;
             String folderName;
             String destinationDir = null;
             String jsonSchema;
             try {
                 try {
-                    classesPath = storeFileAndGetPathFromMultipart(request, ZIP_PART_NAME, uploadDir, BRAAS_RULES_FILE_NAME);
+                    classesPath = storeFileAndGetPathFromMultipart(request, ZIP_PART_NAME, uploadDir);
                     Part part = request.raw().getPart(ZIP_PART_NAME);
                     String contentType = part.getContentType();
                     if (ZIP_COMPRESSED_MIME.equalsIgnoreCase(contentType) || ZIP_MIME.equalsIgnoreCase(contentType)) {
@@ -84,12 +86,13 @@ public class Api implements RouteGroup {
                         zipUtils.unZip(file, uploadDir);
                     }
                 } catch (Throwable ignored) {
-                    classesPath = storeFileAndGetPathFromMultipart(request, JAR_PART_NAME, uploadDir, BRAAS_RULES_FILE_NAME);
+                    classesPath = storeFileAndGetPathFromMultipart(request, JAR_PART_NAME, uploadDir);
                     Part part = request.raw().getPart(JAR_PART_NAME);
                     String contentType = part.getContentType();
                     if (JAR_MIME.equalsIgnoreCase(contentType) || OCTET_STREAM_MIME.equalsIgnoreCase(contentType)) {
                         File file = new File(classesPath);
-                        folderName = file.getName().split("\\.")[0];
+                        String extension = Commons.getFileExtension(file);
+                        folderName = file.getName().replace(extension, StringUtils.EMPTY);
                         destinationDir = uploadDir.getCanonicalPath() + File.separator + folderName;
                         //noinspection ResultOfMethodCallIgnored
                         new File(destinationDir).delete();
@@ -154,9 +157,9 @@ public class Api implements RouteGroup {
             DroolsConfig droolsConfig = (DroolsConfig) ctx.getSessionAttribute(DROOLS_CONFIG_PARAM);
             if (droolsConfig == null) {
                 try {
-                    ApiController.SpreadsheetBaseModel spreadsheetBaseModel = new ApiController.SpreadsheetBaseModel(ctx).invoke();
-                    File sourceClassesDir = spreadsheetBaseModel.getSourceClassesDir();
-                    File compiledClassesDir = spreadsheetBaseModel.getCompiledClassesDir();
+                    ApiController.RuleBaseModel ruleBaseModel = new ApiController.RuleBaseModel(ctx).invoke();
+                    File sourceClassesDir = ruleBaseModel.getSourceClassesDir();
+                    File compiledClassesDir = ruleBaseModel.getCompiledClassesDir();
                     URLClassLoader classLoader = ApiController.buildClassesFromSchema(braasDrools, sourceClassesDir, compiledClassesDir);
                     if (classLoader != null) {
                         droolsConfig = ApiController.createDroolsConfig(
@@ -183,8 +186,8 @@ public class Api implements RouteGroup {
         post(ENCODED_RULES, (request, response) -> {
             try {
                 final SparkWebContext ctx = new SparkWebContext(request, response);
-                ApiController.SpreadsheetBaseModel spreadsheetBaseModel = new ApiController.SpreadsheetBaseModel(ctx).invoke();
-                File uploadDir = spreadsheetBaseModel.getUploadDir();
+                ApiController.UploadModel uploadModel = new ApiController.UploadModel(ctx).invoke();
+                File uploadDir = uploadModel.getUploadDir();
                 String rulesPath;
                 try {
                     rulesPath = ApiController.extractSpreadSheet(request, uploadDir);
@@ -222,10 +225,10 @@ public class Api implements RouteGroup {
                             return Commons.throwError(response, 424, new Exception("Rule base spreadsheet is not previously provided. Make sure you provide it according to API specification [http://braaservice.com/api#/Rules_base]"));
                         }
                     }
-                    ApiController.SpreadsheetBaseModel spreadsheetBaseModel = new ApiController.SpreadsheetBaseModel(ctx).invoke();
-                    File rulesDir = spreadsheetBaseModel.getRulesDir();
-                    File sourceClassesDir = spreadsheetBaseModel.getSourceClassesDir();
-                    File compiledClassesDir = spreadsheetBaseModel.getCompiledClassesDir();
+                    ApiController.RuleBaseModel ruleBaseModel = new ApiController.RuleBaseModel(ctx).invoke();
+                    File rulesDir = ruleBaseModel.getRulesDir();
+                    File sourceClassesDir = ruleBaseModel.getSourceClassesDir();
+                    File compiledClassesDir = ruleBaseModel.getCompiledClassesDir();
                     String rulesPath;
                     try {
                         rulesPath = ApiController.extractSpreadSheet(request, rulesDir);
@@ -318,9 +321,9 @@ public class Api implements RouteGroup {
             put(Commons.EMPTY_PATH, (request, response) -> {
                 try {
                     final SparkWebContext ctx = new SparkWebContext(request, response);
-                    ApiController.SpreadsheetBaseModel spreadsheetBaseModel = new ApiController.SpreadsheetBaseModel(ctx).invoke();
-                    File sourceClassesDir = spreadsheetBaseModel.getSourceClassesDir();
-                    File compiledClassesDir = spreadsheetBaseModel.getCompiledClassesDir();
+                    ApiController.RuleBaseModel ruleBaseModel = new ApiController.RuleBaseModel(ctx).invoke();
+                    File sourceClassesDir = ruleBaseModel.getSourceClassesDir();
+                    File compiledClassesDir = ruleBaseModel.getCompiledClassesDir();
                     String braasSessionId = (String) ctx.getSessionAttribute(BRAAS_SESSION_ID_PARAM);
                     BraasDrools braasDrools;
                     try {

@@ -4,13 +4,9 @@ import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.databind.DeserializationContext;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.deser.std.StdDeserializer;
-import org.apache.commons.lang.StringUtils;
 import org.bson.types.ObjectId;
 
 import java.io.IOException;
-import java.util.Iterator;
-import java.util.LinkedHashSet;
-import java.util.Set;
 
 public class BraasDroolsDeserializer extends StdDeserializer<BraasDrools> {
 
@@ -49,15 +45,7 @@ public class BraasDroolsDeserializer extends StdDeserializer<BraasDrools> {
             }
             JsonNode nodeSchemas = node.get("schemas");
             if (nodeSchemas != null) {
-                if (nodeSchemas.isArray()) {
-                    Set<String> schemasSet = new LinkedHashSet<>();
-                    for (Iterator<JsonNode> it = nodeSchemas.elements(); it.hasNext(); ) {
-                        JsonNode schema = it.next();
-                        schemasSet.add(schema.asText());
-                    }
-                    String schemas = "[" + StringUtils.join(schemasSet.toArray()) + "]";
-                    braasDrools.setSchemas(schemas);
-                }
+                braasDrools.setSchemas(nodeSchemas.toString());
             }
             return braasDrools;
         }

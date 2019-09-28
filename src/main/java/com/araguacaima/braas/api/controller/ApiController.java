@@ -64,7 +64,7 @@ public class ApiController {
             if (StringUtils.isNotBlank(json)) {
                 classLoader = jsonSchemaUtils.processFile_(json, null, sourceClassesDir, compiledClassesDir);
             }
-        } catch (URISyntaxException | NoSuchFieldException | IllegalAccessException | IOException e) {
+        } catch (URISyntaxException | NoSuchFieldException | IllegalAccessException | IOException | InstantiationException e) {
             throw new InternalBraaSException(e);
         }
         return classLoader;
@@ -87,7 +87,7 @@ public class ApiController {
                     classLoader = jsonSchemaUtils.processFile_(schemaFile, packageName, sourceClassesDir, compiledClassesDir);
                 }
             }
-        } catch (URISyntaxException | NoSuchFieldException | IllegalAccessException | IOException e) {
+        } catch (URISyntaxException | NoSuchFieldException | IllegalAccessException | IOException | InstantiationException e) {
             throw new InternalBraaSException(e);
         }
         return classLoader;
@@ -110,7 +110,7 @@ public class ApiController {
                     classLoader = jsonSchemaUtils.processFile_(schemaFile, packageName, sourceClassesDir, compiledClassesDir);
                 }
             }
-        } catch (URISyntaxException | NoSuchFieldException | IllegalAccessException | IOException e) {
+        } catch (URISyntaxException | NoSuchFieldException | IllegalAccessException | IOException | InstantiationException e) {
             throw new InternalBraaSException(e);
         }
         return classLoader;

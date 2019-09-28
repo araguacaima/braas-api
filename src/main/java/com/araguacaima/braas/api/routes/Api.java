@@ -52,8 +52,8 @@ public class Api implements RouteGroup {
 
     protected static Logger log = LoggerFactory.getLogger(Api.class);
 
-    protected static Collection<Option> with = ImmutableList.of(Option.FLATTENED_ENUMS, Option.SIMPLIFIED_ENUMS, Option.DEFINITIONS_FOR_ALL_OBJECTS);
-    protected static Collection<Option> without = null;
+    protected static Collection<Option> with = ImmutableList.of(Option.FLATTENED_ENUMS, Option.SIMPLIFIED_ENUMS);
+    protected static Collection<Option> without = ImmutableList.of(Option.DEFINITIONS_FOR_ALL_OBJECTS);
 
     private static ZipUtils zipUtils = new ZipUtils();
     private static JarUtils jarUtils = new JarUtils();
@@ -79,11 +79,14 @@ public class Api implements RouteGroup {
                     String contentType = part.getContentType();
                     if (ZIP_COMPRESSED_MIME.equalsIgnoreCase(contentType) || ZIP_MIME.equalsIgnoreCase(contentType)) {
                         File file = new File(classesPath);
-                        folderName = file.getName().split("\\.")[0];
+                        String extension = Commons.getFileExtension(file);
+                        folderName = file.getName().replace("." + extension, StringUtils.EMPTY);
                         destinationDir = uploadDir.getCanonicalPath() + File.separator + folderName;
                         //noinspection ResultOfMethodCallIgnored
-                        new File(destinationDir).delete();
-                        zipUtils.unZip(file, uploadDir);
+                        File file1 = new File(destinationDir);
+                        file1.delete();
+                        file1.mkdirs();
+                        zipUtils.unZip(file, file1);
                     }
                 } catch (Throwable ignored) {
                     classesPath = storeFileAndGetPathFromMultipart(request, JAR_PART_NAME, uploadDir);
@@ -92,11 +95,13 @@ public class Api implements RouteGroup {
                     if (JAR_MIME.equalsIgnoreCase(contentType) || OCTET_STREAM_MIME.equalsIgnoreCase(contentType)) {
                         File file = new File(classesPath);
                         String extension = Commons.getFileExtension(file);
-                        folderName = file.getName().replace(extension, StringUtils.EMPTY);
+                        folderName = file.getName().replace("." + extension, StringUtils.EMPTY);
                         destinationDir = uploadDir.getCanonicalPath() + File.separator + folderName;
                         //noinspection ResultOfMethodCallIgnored
-                        new File(destinationDir).delete();
-                        jarUtils.unZip(destinationDir, file.getCanonicalPath());
+                        File file1 = new File(destinationDir);
+                        file1.delete();
+                        file1.mkdirs();
+                        jarUtils.unZip(destinationDir, file1.getCanonicalPath());
                     }
                 }
                 if (StringUtils.isNotBlank(destinationDir)) {

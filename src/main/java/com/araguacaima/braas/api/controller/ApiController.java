@@ -12,6 +12,7 @@ import com.araguacaima.commons.utils.FileUtils;
 import com.araguacaima.commons.utils.JsonSchemaUtils;
 import com.araguacaima.commons.utils.PropertiesHandler;
 import com.araguacaima.commons.utils.StringUtils;
+import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.exc.MismatchedInputException;
@@ -100,7 +101,7 @@ public class ApiController {
             classLoader = new DroolsURLClassLoader(compiledClassesDir.toURI().toURL(), KieBase.class.getClassLoader());
             JsonSchemaUtils<URLClassLoader> jsonSchemaUtils = new JsonSchemaUtils<>(classLoader);
             if (schemaFile.exists()) {
-                String packageName = (Objects.requireNonNull(fileName)).replaceAll("-", ".");
+                String packageName = (Objects.requireNonNull(fileName)).replaceAll("-", ".").replaceAll(" ", ".").toLowerCase();
                 if (schemaFile.isDirectory()) {
                     Iterator<File> files = FileUtils.iterateFilesAndDirs(schemaFile, new SuffixFileFilter(JSON_SUFFIX), TrueFileFilter.INSTANCE);
                     while (files.hasNext()) {
@@ -187,14 +188,16 @@ public class ApiController {
 
     private static void bindCollectionAssetToObject(Class[] classes, ObjectMapper mapper, Collection<Object> col, Collection<Map<String, Object>> jsonCollection) throws IOException {
         for (Map<String, Object> element : jsonCollection) {
-            String element_ = jsonUtils.toJSON(element);
+            ObjectMapper objectMapper = new ObjectMapper();
+            objectMapper.setSerializationInclusion(JsonInclude.Include.NON_EMPTY);
+            String element_ = jsonUtils.toJSON(mapper, element);
             for (Class<?> clazz : classes) {
                 try {
                     Object t = jsonUtils.fromJSON(mapper, element_, clazz);
                     col.add(t);
                     break;
                 } catch (Throwable t) {
-                    log.debug("Incoming string can not be bind to class '" + clazz.getName() + "' due Exception: " + t.getMessage());
+                    log.info("Incoming string can not be bind to class '" + clazz.getName() + "' due Exception: " + t.getMessage());
                 }
             }
         }

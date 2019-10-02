@@ -3,6 +3,7 @@ package com.araguacaima.braas.api.controller;
 import com.araguacaima.braas.api.exception.InternalBraaSException;
 import com.araguacaima.braas.api.model.BraasDrools;
 import com.araguacaima.braas.core.Constants;
+import com.araguacaima.braas.core.RuleMessageWarning;
 import com.araguacaima.braas.core.drools.DroolsConfig;
 import com.araguacaima.braas.core.drools.DroolsURLClassLoader;
 import com.araguacaima.braas.core.drools.DroolsUtils;
@@ -192,9 +193,21 @@ public class ApiController {
                     Object t = jsonUtils.fromJSON(mapper, element_, clazz);
                     col.add(t);
                     break;
-                } catch (Throwable ignored1) {
+                } catch (Throwable t) {
+                    log.debug("Incoming string can not be bind to class '" + clazz.getName() + "' due Exception: " + t.getMessage());
                 }
             }
+        }
+        if (col.isEmpty()) {
+            Object value = jsonCollection;
+            String language = "en";
+            String comment = "No incoming asset is bindable to any provided model definition within schemas";
+            String expectedValue = "Some asset whose structure match with some model definition within any of provided schemas";
+            col.add(new RuleMessageWarning(language, null, comment, expectedValue, null, null, value));
+            language = "es";
+            comment = "Ninguna entrada es asociable a alguna definición del modelo dentro de los esquemas provistos";
+            expectedValue = "Alguna entrada cuya estructura se corresponda con alguna definición de un modelo dentro de los esquemas provistos";
+            col.add(new RuleMessageWarning(language, null, comment, expectedValue, null, null, value));
         }
     }
 

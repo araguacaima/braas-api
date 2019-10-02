@@ -250,6 +250,7 @@ paths:
       parameters:
         - $ref: "#/parameters/braas-session"
         - $ref: "#/parameters/locale"
+        - $ref: "#/parameters/rules-tab-name"
         - in: body
           name: assets
           description: The set of assets to be executed. It could be a single object or an array of them. If you chose to omit this parameter you should mandatory provide an assets-file parameter, as described below
@@ -358,7 +359,13 @@ parameters:
     in: query
     type: string
     required: false
-    description: Stablish the desired locale in order to handle properly i18n messages or data returned by rules base when multiple languages are setted on it.
+    description: Establish the desired locale in order to handle properly i18n messages or data returned by rules base when multiple languages are setted on it.
+  rules-tab-name:
+    name: rules-tab-name
+    in: query
+    type: string
+    required: false
+    description: Indicates the tab name within the spreadsheet on which the rules resides. If absent the engine is going to search for a tab named 'Decision Tables' by default. This method will fail if there is no tab named as indicated by this parameter, or if no tab with rules is named 'Decision Tables'
   rules-base-types:
     name: rules-base-type
     in: path

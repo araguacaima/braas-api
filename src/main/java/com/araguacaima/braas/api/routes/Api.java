@@ -7,6 +7,7 @@ import com.araguacaima.braas.api.controller.MongoAccess;
 import com.araguacaima.braas.api.model.BraasDrools;
 import com.araguacaima.braas.core.Constants;
 import com.araguacaima.braas.core.drools.DroolsConfig;
+import com.araguacaima.braas.core.drools.DroolsUtils;
 import com.araguacaima.commons.utils.FileUtils;
 import com.araguacaima.commons.utils.JarUtils;
 import com.araguacaima.commons.utils.StringUtils;
@@ -148,6 +149,14 @@ public class Api implements RouteGroup {
             } catch (IllegalArgumentException ignored) {
 
             }
+            String rulesTabName = request.queryParams("rules-tab-name");
+            try {
+                if (StringUtils.isBlank(rulesTabName)) {
+                    rulesTabName = DroolsUtils.RULES_TABLES_DEFAULT_NAME;
+                }
+            } catch (IllegalArgumentException ignored) {
+
+            }
             String braasSessionId = request.params(BRAAS_SESSION_ID_PARAM);
 
             BraasDrools braasDrools = MongoAccess.getBraasDroolsById(BRAAS_DROOLS_PARAM, braasSessionId);
@@ -178,6 +187,7 @@ public class Api implements RouteGroup {
                 }
             }
             droolsConfig.setLocale(locale);
+            droolsConfig.setRulesTabName(rulesTabName);
 
             Collection<?> results = ApiController.processAssets(droolsConfig, request);
 

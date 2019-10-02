@@ -9,9 +9,7 @@ import com.araguacaima.braas.core.Constants;
 import com.araguacaima.braas.core.drools.DroolsConfig;
 import com.araguacaima.braas.core.drools.DroolsUtils;
 import com.araguacaima.commons.utils.FileUtils;
-import com.araguacaima.commons.utils.JarUtils;
 import com.araguacaima.commons.utils.StringUtils;
-import com.araguacaima.commons.utils.ZipUtils;
 import com.github.victools.jsonschema.generator.Option;
 import com.google.common.collect.ImmutableList;
 import org.apache.commons.io.filefilter.SuffixFileFilter;
@@ -55,9 +53,6 @@ public class Api implements RouteGroup {
 
     protected static Collection<Option> with = ImmutableList.of(Option.FLATTENED_ENUMS, Option.SIMPLIFIED_ENUMS);
     protected static Collection<Option> without = ImmutableList.of(Option.DEFINITIONS_FOR_ALL_OBJECTS);
-
-    private static ZipUtils zipUtils = new ZipUtils();
-    private static JarUtils jarUtils = new JarUtils();
 
     @Override
     public void addRoutes() {

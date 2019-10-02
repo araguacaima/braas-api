@@ -1,7 +1,6 @@
 package com.araguacaima.braas.api.common;
 
 import com.araguacaima.braas.api.BeanBuilder;
-import com.araguacaima.braas.api.ConfigFactory;
 import com.araguacaima.braas.api.MessagesWrapper;
 import com.araguacaima.braas.api.Server;
 import com.araguacaima.braas.api.filter.SessionFilter;
@@ -14,8 +13,9 @@ import com.araguacaima.braas.core.drools.OSValidator;
 import com.araguacaima.braas.core.google.model.Account;
 import com.araguacaima.braas.core.google.model.Role;
 import com.araguacaima.commons.utils.FileUtils;
+import com.araguacaima.commons.utils.JarUtils;
 import com.araguacaima.commons.utils.JsonUtils;
-import com.araguacaima.commons.utils.ReflectionUtils;
+import com.araguacaima.commons.utils.ZipUtils;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
@@ -26,7 +26,6 @@ import org.apache.commons.collections4.MapUtils;
 import org.apache.commons.collections4.map.CaseInsensitiveMap;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.StringUtils;
-import org.pac4j.core.config.Config;
 import org.pac4j.core.profile.CommonProfile;
 import org.pac4j.core.profile.ProfileManager;
 import org.pac4j.sparkjava.SparkWebContext;
@@ -52,8 +51,9 @@ import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
 import java.util.*;
 
-import static com.araguacaima.braas.api.Server.*;
-import static com.araguacaima.braas.api.common.Security.JWT_SALT;
+import static com.araguacaima.braas.api.Server.engine;
+import static com.araguacaima.braas.api.Server.multipartConfigElement;
+import static com.araguacaima.braas.core.Commons.reflectionUtils;
 import static java.net.HttpURLConnection.HTTP_INTERNAL_ERROR;
 import static java.net.HttpURLConnection.HTTP_OK;
 
@@ -109,9 +109,11 @@ public class Commons {
     public static final String JSON_SUFFIX = "json";
     public static final String JSON_SCHEMA_FILE_NAME = "braas-json-schemas.json";
     public static final String SPREADSHEET_FILE_EXTENSION = ".xlsx";
-    public static final ReflectionUtils reflectionUtils = new ReflectionUtils(null);
     public static final String BRAAS_RULES_FILE_NAME = "braas-rules.xlsx";
-    final static Config config = new ConfigFactory(JWT_SALT, engine).build(deployedServer, DEFAULT_PATH, clients);
+
+    public static ZipUtils zipUtils = ZipUtils.getInstance();
+    public static JarUtils jarUtils = JarUtils.getInstance();
+
     private static Logger log = LoggerFactory.getLogger(Commons.class);
     public static final ExceptionHandler exceptionHandler = new ExceptionHandlerImpl(Exception.class) {
         @Override
@@ -141,6 +143,7 @@ public class Commons {
             }
         }
     };
+    //final static Config config = new ConfigFactory(JWT_SALT, engine).build(deployedServer, DEFAULT_PATH, clients);
     //final static CallbackRoute callback = new CallbackRoute(config, null, true);
     //static Filter strongSecurityFilter = Authentication.buildStrongSecurityFilter(config);
     //static Filter adminApiFilter = new AdminAPIFilter(config, clients, "adminAuthorizer,custom," + DefaultAuthorizers.ALLOW_AJAX_REQUESTS + "," + DefaultAuthorizers.IS_AUTHENTICATED);
@@ -187,7 +190,7 @@ public class Commons {
             try {
                 if (o2 != null) {
                     Class<?> clazz = o2.getClass();
-                    if (ReflectionUtils.isCollectionImplementation(clazz)) {
+                    if (reflectionUtils.isCollectionImplementation(clazz)) {
                         if (Collection.class.isAssignableFrom(clazz)) {
                             newMap.put(key, o2);
                             newMap.put(key + "_", jsonUtils.toJSON(o2, true));

@@ -12,7 +12,7 @@ import java.lang.reflect.InvocationTargetException;
 import java.math.BigDecimal;
 import java.util.*;
 
-import static com.araguacaima.braas.api.common.Commons.reflectionUtils;
+import static com.araguacaima.braas.core.Commons.reflectionUtils;
 import static cz.jirutka.rsql.parser.ast.RSQLOperators.*;
 
 class JsonParserSpecification {

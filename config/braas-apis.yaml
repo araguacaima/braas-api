@@ -378,6 +378,7 @@ parameters:
       - ABSOLUTE_DRL_PATH
     required: true
     description: Rules base type.
+
 # Definitions:
 definitions:
   #google-drive-model:

@@ -380,25 +380,25 @@ parameters:
     description: Rules base type.
 # Definitions:
 definitions:
-  google-drive-model:
-    type: object
-    description: Information for defining the rule's based on a Google Drive spreadsheet
-    properties:
-      rules:
-        type: object
-        description: Unique identifier within Google Drive platform for spreadsheet file that represents the rules' base
-        properties:
-          path:
-            type: string
-            description: Unique identifier within Google Drive platform for spreadsheet file that represents the rules' base
-            required: true
-        required: true
-      credential:
-        type: object
-        description: User credential information for consuming Google Drive
-        required: true
-    required:
-      - rules
+  #google-drive-model:
+  #  type: object
+  #  description: Information for defining the rule's based on a Google Drive spreadsheet
+  #  properties:
+  #    rules:
+  #      type: object
+  #      description: Unique identifier within Google Drive platform for spreadsheet file that represents the rules' base
+  #      properties:
+  #        path:
+  #          type: string
+  #          description: Unique identifier within Google Drive platform for spreadsheet file that represents the rules' base
+  #          required: true
+  #      required: true
+  #    credential:
+  #      type: object
+  #      description: User credential information for consuming Google Drive
+  #      required: true
+  #  required:
+  #    - rules
   binary-model:
     type: object
     description: Information for defining the rule's based on a binary spreadsheet

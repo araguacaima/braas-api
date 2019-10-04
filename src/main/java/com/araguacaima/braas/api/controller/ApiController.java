@@ -36,6 +36,7 @@ import java.util.*;
 
 import static com.araguacaima.braas.api.Server.multipartConfigElement;
 import static com.araguacaima.braas.api.common.Commons.*;
+import static com.araguacaima.braas.core.Commons.reflectionUtils;
 
 public class ApiController {
 
@@ -154,6 +155,11 @@ public class ApiController {
             droolsUtils.addGlobals(globals);
             Object assets = extractAssets(request, droolsConfig.getClassLoader());
             results = droolsUtils.executeRules(assets);
+            if (reflectionUtils.isCollectionImplementation(assets.getClass())) {
+                results.removeAll((Collection) assets);
+            } else {
+                results.remove(assets);
+            }
         }
         return results;
     }

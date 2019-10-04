@@ -38,6 +38,7 @@ import static com.araguacaima.braas.api.Server.multipartConfigElement;
 import static com.araguacaima.braas.api.common.Commons.*;
 import static com.araguacaima.braas.core.Commons.reflectionUtils;
 
+@SuppressWarnings({"unchecked", "SuspiciousMethodCalls"})
 public class ApiController {
 
     private static Logger log = LoggerFactory.getLogger(ApiController.class);
@@ -58,7 +59,7 @@ public class ApiController {
         }
     }
 
-    public static URLClassLoader buildClassesFromSchema(String json, File sourceClassesDir, File compiledClassesDir) throws InternalBraaSException {
+    private static URLClassLoader buildClassesFromSchema(String json, File sourceClassesDir, File compiledClassesDir) throws InternalBraaSException {
         URLClassLoader classLoader;
         try {
             classLoader = new DroolsURLClassLoader(compiledClassesDir.toURI().toURL(), KieBase.class.getClassLoader());
@@ -141,8 +142,11 @@ public class ApiController {
     }
 
     public static Collection<?> processAssets(DroolsConfig droolsConfig, Request request) throws Exception {
-        Collection<?> results = null;
+
+        Collection result = null;
         if (droolsConfig != null) {
+            result = new HashSet();
+            Collection<?> intermediateResult;
             DroolsUtils droolsUtils = new DroolsUtils(droolsConfig);
             Map<String, Object> globals = new HashMap<>();
             Locale locale = droolsConfig.getLocale();
@@ -154,17 +158,25 @@ public class ApiController {
             globals.put("logger", log);
             droolsUtils.addGlobals(globals);
             Object assets = extractAssets(request, droolsConfig.getClassLoader());
-            results = droolsUtils.executeRules(assets);
+            intermediateResult = droolsUtils.executeRules(assets);
             if (reflectionUtils.isCollectionImplementation(assets.getClass())) {
-                results.removeAll((Collection) assets);
+                intermediateResult.removeAll((Collection) assets);
             } else {
-                results.remove(assets);
+                intermediateResult.remove(assets);
+            }
+
+            for (Object element : intermediateResult) {
+                if (reflectionUtils.isCollectionImplementation(element.getClass())) {
+                    result.addAll((Collection) element);
+                } else {
+                    result.add(element);
+                }
             }
         }
-        return results;
+        return result;
     }
 
-    public static Object extractAssets(Request request, URLClassLoader classLoader) throws InternalBraaSException {
+    private static Object extractAssets(Request request, URLClassLoader classLoader) throws InternalBraaSException {
         Object json;
         try {
             String assetsStr;
@@ -207,15 +219,14 @@ public class ApiController {
             }
         }
         if (col.isEmpty()) {
-            Object value = jsonCollection;
             String language = "en";
             String comment = "No incoming asset is bindable to any provided model definition within schemas";
             String expectedValue = "Some asset whose structure match with some model definition within any of provided schemas";
-            col.add(new RuleMessageWarning(language, null, comment, expectedValue, null, null, value));
+            col.add(new RuleMessageWarning(language, null, comment, expectedValue, null, null, jsonCollection));
             language = "es";
             comment = "Ninguna entrada es asociable a alguna definición del modelo dentro de los esquemas provistos";
             expectedValue = "Alguna entrada cuya estructura se corresponda con alguna definición de un modelo dentro de los esquemas provistos";
-            col.add(new RuleMessageWarning(language, null, comment, expectedValue, null, null, value));
+            col.add(new RuleMessageWarning(language, null, comment, expectedValue, null, null, jsonCollection));
         }
     }
 
@@ -226,6 +237,7 @@ public class ApiController {
                 json = jsonUtils.fromJSON(mapper, asset, clazz);
                 break;
             } catch (MismatchedInputException ignored1) {
+                log.error(ignored1.getMessage());
             }
         }
         if (json == null) {
@@ -296,7 +308,7 @@ public class ApiController {
         return schemaPath;
     }
 
-    public static BraasDrools fixNamespace(String braasSessionId) {
+    private static BraasDrools fixNamespace(String braasSessionId) {
         BraasDrools braasDrools = MongoAccess.getBraasDroolsById(BRAAS_DROOLS_PARAM, braasSessionId);
         if (braasDrools == null) {
             BraasDrools newBraasDrools = new BraasDrools();
@@ -382,6 +394,7 @@ public class ApiController {
         return braasDrools;
     }
 
+    @SuppressWarnings("ResultOfMethodCallIgnored")
     public static class RuleBaseModel {
         private final SparkWebContext ctx;
         private File rulesDir;
@@ -432,6 +445,7 @@ public class ApiController {
         }
     }
 
+    @SuppressWarnings("ResultOfMethodCallIgnored")
     public static class UploadModel {
         private final SparkWebContext ctx;
         private File uploadDir;

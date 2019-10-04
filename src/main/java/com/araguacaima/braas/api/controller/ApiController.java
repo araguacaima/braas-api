@@ -36,7 +36,6 @@ import java.util.*;
 
 import static com.araguacaima.braas.api.Server.multipartConfigElement;
 import static com.araguacaima.braas.api.common.Commons.*;
-import static com.araguacaima.braas.core.drools.utils.RuleMessageUtils.getMessages;
 
 public class ApiController {
 
@@ -154,7 +153,7 @@ public class ApiController {
             globals.put("logger", log);
             droolsUtils.addGlobals(globals);
             Object assets = extractAssets(request, droolsConfig.getClassLoader());
-            results = getMessages(droolsUtils.executeRules(assets), locale);
+            results = droolsUtils.executeRules(assets);
         }
         return results;
     }

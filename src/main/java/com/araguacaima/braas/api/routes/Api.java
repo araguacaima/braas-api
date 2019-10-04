@@ -225,13 +225,15 @@ public class Api implements RouteGroup {
             //before(Commons.EMPTY_PATH, Commons.apiFilter);
             before(Commons.EMPTY_PATH, ApiController::setNamespace);
             put(Commons.EMPTY_PATH, (request, response) -> {
+                final SparkWebContext ctx = new SparkWebContext(request, response);
                 try {
-                    final SparkWebContext ctx = new SparkWebContext(request, response);
                     String braasSessionId = request.params(BRAAS_SESSION_ID_PARAM);
                     BraasDrools braasDrools = (BraasDrools) ctx.getSessionAttribute(BRAAS_DROOLS_PARAM);
                     if (braasDrools == null || !braasDrools.getBraasId().equals(braasSessionId)) {
                         braasDrools = ApiController.buildBraasDrools(braasSessionId, ctx);
                         if (braasDrools == null) {
+                            ctx.setSessionAttribute(BRAAS_DROOLS_PARAM, null);
+                            ctx.setSessionAttribute(DROOLS_CONFIG_PARAM, null);
                             return Commons.throwError(response, 424, new Exception("Rule base spreadsheet is not previously provided. Make sure you provide it according to API specification [http://braaservice.com/api#/Rules_base]"));
                         }
                     }
@@ -243,22 +245,37 @@ public class Api implements RouteGroup {
                     try {
                         rulesPath = ApiController.extractSpreadSheet(request, rulesDir);
                     } catch (Throwable t) {
+                        ctx.setSessionAttribute(BRAAS_DROOLS_PARAM, null);
+                        ctx.setSessionAttribute(DROOLS_CONFIG_PARAM, null);
                         return Commons.throwError(response, HTTP_CONFLICT, new Exception("Rule base spreadsheet is not present on request. Make sure you provide it according to API specification [http://braaservice.com/api#/Rules_base/add_base]", t));
                     }
+                    String binary = encodeFileToBase64(rulesPath);
                     String schemaPath;
                     try {
                         schemaPath = ApiController.extractSchema(request, rulesDir);
                     } catch (Throwable t) {
+                        ctx.setSessionAttribute(BRAAS_DROOLS_PARAM, null);
+                        ctx.setSessionAttribute(DROOLS_CONFIG_PARAM, null);
                         return Commons.throwError(response, HTTP_CONFLICT, new Exception("Json schema is not present on request. Make sure you provide it according to API specification [http://braaservice.com/api#/Rules_base/add_base]", t));
                     }
                     File schemaFile = new File(schemaPath);
                     URLClassLoader classLoader = ApiController.buildClassesFromSchema(
                             schemaFile, getFileNameFromPart(request.raw().getPart(FILE_NAME_PREFIX)), sourceClassesDir, compiledClassesDir);
                     if (classLoader != null) {
+                        DroolsConfig droolsConfig = ApiController.createDroolsConfig(binary, classLoader, null, Constants.URL_RESOURCE_STRATEGIES.ABSOLUTE_DECISION_TABLE_PATH);
+                        DroolsUtils droolsUtils = new DroolsUtils(droolsConfig);
+                        try {
+                            droolsUtils.executeRules(new Object());
+                        } catch (Throwable t) {
+                            ctx.setSessionAttribute(BRAAS_DROOLS_PARAM, null);
+                            ctx.setSessionAttribute(DROOLS_CONFIG_PARAM, null);
+                            return Commons.throwError(response, HTTP_INTERNAL_ERROR, new Exception("It was not possible to load your provided schema to be used later in your rule's base", t));
+                        }
+                        ctx.setSessionAttribute(DROOLS_CONFIG_PARAM, droolsConfig);
                         String schemas_ = FileUtils.readFileToString(schemaFile, StandardCharsets.UTF_8);
                         braasDrools.setSchemas(schemas_);
                         BraasDrools.Spreadsheet spreadsheet_ = new BraasDrools.Spreadsheet();
-                        spreadsheet_.setBinary(encodeFileToBase64(rulesPath));
+                        spreadsheet_.setBinary(binary);
                         braasDrools.setSpreadsheet(spreadsheet_);
                         BraasDrools braasDrools_ = MongoAccess.updateBraasDrools(BRAAS_DROOLS_PARAM, braasDrools);
                         if (braasDrools_ != null) {
@@ -266,12 +283,18 @@ public class Api implements RouteGroup {
                             ctx.setSessionAttribute(BRAAS_DROOLS_PARAM, braasDrools_);
                             response.status(HTTP_CREATED);
                         } else {
+                            ctx.setSessionAttribute(BRAAS_DROOLS_PARAM, null);
+                            ctx.setSessionAttribute(DROOLS_CONFIG_PARAM, null);
                             return Commons.throwError(response, HTTP_INTERNAL_ERROR, new Exception("It was not possible to load your provided schema to be used later in your rule's base"));
                         }
                     } else {
+                        ctx.setSessionAttribute(BRAAS_DROOLS_PARAM, null);
+                        ctx.setSessionAttribute(DROOLS_CONFIG_PARAM, null);
                         return Commons.throwError(response, HTTP_INTERNAL_ERROR, new Exception("It was not possible to load your provided schema to be used later in your rule's base"));
                     }
                 } catch (Throwable ex) {
+                    ctx.setSessionAttribute(BRAAS_DROOLS_PARAM, null);
+                    ctx.setSessionAttribute(DROOLS_CONFIG_PARAM, null);
                     ex.printStackTrace();
                     response.status(HTTP_INTERNAL_ERROR);
                 }

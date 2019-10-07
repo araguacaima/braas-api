@@ -1,6 +1,7 @@
 package com.araguacaima.braas.api.controller;
 
 import com.araguacaima.braas.api.model.BraasDrools;
+import com.araguacaima.braas.core.google.model.Config;
 import com.mongodb.MongoClientSettings;
 import com.mongodb.MongoClientURI;
 import com.mongodb.client.MongoClient;
@@ -12,7 +13,13 @@ import org.bson.codecs.configuration.CodecRegistry;
 import org.bson.codecs.pojo.PojoCodecProvider;
 import org.bson.conversions.Bson;
 
+import java.io.IOException;
+import java.util.Collection;
+import java.util.LinkedHashSet;
+import java.util.Set;
+
 import static com.araguacaima.braas.api.Server.environment;
+import static com.araguacaima.braas.api.common.Commons.jsonUtils;
 import static com.mongodb.client.model.Filters.eq;
 import static com.mongodb.client.model.Updates.combine;
 import static com.mongodb.client.model.Updates.set;
@@ -36,6 +43,19 @@ public class MongoAccess {
 
         // get handle to "mydb" database
         database = mongoClient.getDatabase(databaseName).withCodecRegistry(pojoCodecRegistry);
+    }
+
+    public static <T> Collection<T> getAll(Class<T> clazz, String collectionName) throws IOException {
+        MongoCollection collection = database.getCollection(collectionName, clazz);
+        Set<T> result = new LinkedHashSet<>();
+        if (collection.countDocuments() == 0) {
+            return null;
+        } else {
+            for (Object document : collection.find()) {
+                result.add(jsonUtils.fromJSON(document.toString(), clazz));
+            }
+            return result;
+        }
     }
 
     private static <T> T getById(Class<T> clazz, String collectionName, Object id, String braasId) {
@@ -73,4 +93,7 @@ public class MongoAccess {
     }
 
 
+    public static Collection<Config> getConfigs() {
+        return null;
+    }
 }

@@ -147,7 +147,7 @@ public class Api implements RouteGroup {
             String rulesTabName = request.queryParams("rules-tab-name");
             try {
                 if (StringUtils.isBlank(rulesTabName)) {
-                    rulesTabName = DroolsUtils.RULES_TABLES_DEFAULT_NAME;
+                    rulesTabName = DroolsConfig.DEFAULT_RULESHEET_NAME;
                 }
             } catch (IllegalArgumentException ignored) {
 

@@ -1,9 +1,11 @@
 package com.araguacaima.braas.api;
 
 import com.araguacaima.braas.api.common.Commons;
+import com.araguacaima.braas.api.controller.MongoAccess;
 import com.araguacaima.braas.api.routes.Admin;
 import com.araguacaima.braas.api.routes.Api;
 import com.araguacaima.braas.api.routes.Braas;
+import com.araguacaima.braas.core.google.model.Config;
 import com.araguacaima.commons.utils.MapUtils;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -68,6 +70,26 @@ public class Server {
         config.setBasePath(basePath);
         config.getSharedVariables().put("basePath", basePath);
         config.setPrettyPrint(true);
+
+        Config config1 = new Config("mail.debug", "false");
+        Config config2 = new Config("mail.server.protocol", "smtp");
+        Config config3 = new Config("mail.smtp.auth", "true");
+        Config config4 = new Config("mail.smtp.starttls.enable", "true");
+        Config config5 = new Config("mail.smtp.quitwait", "false");
+        Config config6 = new Config("mail.server.host", "smtpout.secureserver.net");
+        Config config7 = new Config("mail.server.port", "25");
+        Config config8 = new Config("mail.server.username", "support@open-archi.com");
+        Config config9 = new Config("mail.server.password", "niga032.");
+
+        MongoAccess.storeConfig("braas_config", config1);
+        MongoAccess.storeConfig("braas_config", config2);
+        MongoAccess.storeConfig("braas_config", config3);
+        MongoAccess.storeConfig("braas_config", config4);
+        MongoAccess.storeConfig("braas_config", config5);
+        MongoAccess.storeConfig("braas_config", config6);
+        MongoAccess.storeConfig("braas_config", config7);
+        MongoAccess.storeConfig("braas_config", config8);
+        MongoAccess.storeConfig("braas_config", config9);
     }
 
     private static int getAssignedPort() {

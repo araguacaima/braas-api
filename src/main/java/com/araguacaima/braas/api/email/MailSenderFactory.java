@@ -4,6 +4,7 @@ import com.araguacaima.braas.api.controller.MongoAccess;
 import com.araguacaima.braas.core.google.model.Config;
 import com.araguacaima.braas.core.google.wrapper.ConfigWrapper;
 
+import java.io.IOException;
 import java.util.Collection;
 
 public class MailSenderFactory {
@@ -13,7 +14,7 @@ public class MailSenderFactory {
         return INSTANCE;
     }
 
-    public MailSender getMailSender(MailType type) {
+    public MailSender getMailSender(MailType type) throws IOException {
         Collection<Config> configs = MongoAccess.getAll(Config.class, "configs");
         switch (type) {
             case SMTP:

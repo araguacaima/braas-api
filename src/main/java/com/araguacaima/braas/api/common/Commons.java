@@ -90,7 +90,8 @@ public class Commons {
     public static final String COMPILED_CLASSES_DIR = "compiled-classes";
     public static final String BRAAS_SESSION_ID_PARAM = "braasSessionId";
     public static final String BRAAS_SESSION_ID_PATH_PARAM = "/:" + BRAAS_SESSION_ID_PARAM;
-    public static final String BRAAS_DROOLS_PARAM = "braasDrools";
+    public static final String BRAAS_DROOLS_PARAM = "braas_drools";
+    public static final String BRAAS_CONFIG_PARAM = "braas_config";
     public static final String DROOLS_CONFIG_PARAM = "drools-config";
     public static final String UPLOAD_DIR_PARAM = "uploadDir";
     public static final String RULES_DIR_PARAM = "rulesDir";

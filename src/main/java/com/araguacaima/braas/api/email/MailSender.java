@@ -5,6 +5,7 @@ import java.util.Collection;
 public interface MailSender {
 
     String sendMessage(String recipientEmail,
-                       String from, String subject,
+                       String from,
+                       String subject,
                        Collection<Object> messages);
 }

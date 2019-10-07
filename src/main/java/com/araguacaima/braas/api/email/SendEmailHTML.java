@@ -54,9 +54,7 @@ public class SendEmailHTML implements MailSender {
     }
 
     @Override
-    public String sendMessage(String recipientsList,
-                              String from, String subject,
-                              Collection<Object> messages) {
+    public String sendMessage(String recipientsList, String from, String subject, Collection<Object> messages) {
 
         Map<String, Object> model = new HashMap<>();
         model.put("messages", messages);

@@ -14,9 +14,7 @@ import org.bson.codecs.pojo.PojoCodecProvider;
 import org.bson.conversions.Bson;
 
 import java.io.IOException;
-import java.util.Collection;
-import java.util.LinkedHashSet;
-import java.util.Set;
+import java.util.*;
 
 import static com.araguacaima.braas.api.Server.environment;
 import static com.araguacaima.braas.api.common.Commons.jsonUtils;
@@ -46,19 +44,33 @@ public class MongoAccess {
     }
 
     public static <T> Collection<T> getAll(Class<T> clazz, String collectionName) throws IOException {
-        MongoCollection collection = database.getCollection(collectionName, clazz);
+        MongoCollection<T> collection = database.getCollection(collectionName, clazz);
         Set<T> result = new LinkedHashSet<>();
         if (collection.countDocuments() == 0) {
             return null;
         } else {
-            for (Object document : collection.find()) {
+            for (T document : collection.find()) {
                 result.add(jsonUtils.fromJSON(document.toString(), clazz));
             }
             return result;
         }
     }
 
-    private static <T> T getById(Class<T> clazz, String collectionName, Object id, String braasId) {
+
+    public static Map getAllAsMap(String collectionName) throws IOException {
+        MongoCollection collection = database.getCollection(collectionName);
+        Map<String, ?> result = new LinkedHashMap<>();
+        if (collection.countDocuments() == 0) {
+            return null;
+        } else {
+            for (Object document : collection.find()) {
+                result.putAll(jsonUtils.fromJSON(document.toString(), Map.class));
+            }
+            return result;
+        }
+    }
+
+    private static <T> T getById(Class<T> clazz, String collectionName, String id, String braasId) {
         MongoCollection<T> collection = database.getCollection(collectionName, clazz);
         return collection.find(eq(braasId, id)).first();
     }
@@ -69,7 +81,7 @@ public class MongoAccess {
         return object;
     }
 
-    private static <T> boolean update(Class<T> clazz, String collectionName, Object id, Bson update, String fieldName) {
+    private static <T> boolean update(Class<T> clazz, String collectionName, String id, Bson update, String fieldName) {
         MongoCollection<T> collection = database.getCollection(collectionName, clazz);
         UpdateResult result = collection.updateOne(eq(fieldName, id), update);
         return result.wasAcknowledged();
@@ -92,6 +104,9 @@ public class MongoAccess {
         return null;
     }
 
+    public static Config storeConfig(String collectionName, Config object) {
+        return store(Config.class, collectionName, object);
+    }
 
     public static Collection<Config> getConfigs() {
         return null;

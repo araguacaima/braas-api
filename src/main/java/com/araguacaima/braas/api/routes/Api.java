@@ -263,13 +263,12 @@ public class Api implements RouteGroup {
                             schemaFile, getFileNameFromPart(request.raw().getPart(FILE_NAME_PREFIX)), sourceClassesDir, compiledClassesDir);
                     if (classLoader != null) {
                         DroolsConfig droolsConfig = ApiController.createDroolsConfig(binary, classLoader, null, Constants.URL_RESOURCE_STRATEGIES.ABSOLUTE_DECISION_TABLE_PATH);
-                        DroolsUtils droolsUtils = new DroolsUtils(droolsConfig);
                         try {
-                            droolsUtils.executeRules(new Object());
+                            new DroolsUtils(droolsConfig);
                         } catch (Throwable t) {
                             ctx.setSessionAttribute(BRAAS_DROOLS_PARAM, null);
                             ctx.setSessionAttribute(DROOLS_CONFIG_PARAM, null);
-                            return Commons.throwError(response, HTTP_INTERNAL_ERROR, new Exception("It was not possible to load your provided schema to be used later in your rule's base", t));
+                            return Commons.throwError(response, HTTP_INTERNAL_ERROR, new Exception("Can not parse rule's spreadsheet", t));
                         }
                         ctx.setSessionAttribute(DROOLS_CONFIG_PARAM, droolsConfig);
                         String schemas_ = FileUtils.readFileToString(schemaFile, StandardCharsets.UTF_8);

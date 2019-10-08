@@ -172,6 +172,13 @@ public class ApiController {
                     result.add(element);
                 }
             }
+
+            for (String globalIdentifier : droolsUtils.getGlobalsDefinedInSheets()) {
+                Object globalToBeAdded = droolsUtils.getGlobals().get(globalIdentifier);
+                if (globalToBeAdded != null) {
+                    result.add(globalToBeAdded);
+                }
+            }
         }
         return result;
     }

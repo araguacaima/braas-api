@@ -110,9 +110,8 @@ public class Commons {
 
     public static ZipUtils zipUtils = ZipUtils.getInstance();
     public static JarUtils jarUtils = JarUtils.getInstance();
-
-    private static Logger log = LoggerFactory.getLogger(Commons.class);
     public static MapUtils mapUtils = MapUtils.getInstance();
+    private static Logger log = LoggerFactory.getLogger(Commons.class);
     public static final ExceptionHandler exceptionHandler = new ExceptionHandlerImpl(Exception.class) {
         @Override
         public void handle(Exception exception, Request request, Response response) {
@@ -515,7 +514,7 @@ public class Commons {
     public static String getFilePath(String fileName) throws URISyntaxException, NullPointerException {
         URL resource = Server.class.getClassLoader().getResource("./" + fileName);
         String path = resource.toURI().getPath();
-        if (OSValidator.isWindows() && path.startsWith("/")) {
+        if (path.startsWith(String.valueOf(File.separatorChar))) {
             path = path.substring(1);
         }
         return path;

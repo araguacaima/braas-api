@@ -10,20 +10,20 @@ info:
     url: http://www.apache.org/licenses/LICENSE-2.0.html
 host: ${DEPLOYED_SERVER}
 tags:
-- name: Rules base
-  description: Manages your own rule's base as a spreadsheet. It can be uploaded from a locally file or even defined remotely thru a Google Drive Spreadsheet URL. This rule's base can also be downloaded
-- name: Rules engine execution
-  description: Once you've defined the rules base, you can use these APIs to pass your custom objet to the rules engine
-- name: Utils
-  description: Some extra utilities
+  - name: Rules base
+    description: Manages your own rule's base as a spreadsheet. It can be uploaded from a locally file or even defined remotely thru a Google Drive Spreadsheet URL. This rule's base can also be downloaded
+  - name: Rules engine execution
+    description: Once you've defined the rules base, you can use these APIs to pass your custom objet to the rules engine
+  - name: Utils
+    description: Some extra utilities
 schemes:
-- http
-- https
+  - http
+  - https
 paths:
   /api/rules-base/{braasSessionId}/file:
     get:
       tags:
-      - Rules base
+        - Rules base
       summary: Download the rule's base.
       description: Download the rule's base you previously uploaded in current session as a spreadsheet file or non-content if any.
       operationId: get-file-rules-base
@@ -38,11 +38,11 @@ paths:
           description: No content
       security:
         - braas-auth:
-          - read:base
+            - read:base
         - braas-session-id: []
     put:
       tags:
-      - Rules base
+        - Rules base
       summary: Add a new or replace a local file based rule's base
       description: Upload a new rule's base as a spreadsheet from a locally file if it doesn't previously uploaded, or replace an existing one. If there is already a rule's base setted this method will overide it. This method will fail if any non-authorized user attempts to use it.
       operationId: add-or-replace-file-rules-base
@@ -64,21 +64,21 @@ paths:
           description:  A file with a json map containing every class schema used within rules.
       responses:
         201:
-         description: Created
+          description: Created
         202:
-         description: Accepted
+          description: Accepted
         401:
-         description: Unauthorized
+          description: Unauthorized
         405:
-         description: Invalid input
+          description: Invalid input
         409:
           description: Conflict
         424:
           description: Missing dependencies
       security:
         - braas-auth:
-          - write:rule
-          - read:rule
+            - write:rule
+            - read:rule
         - braas-session-id: []
     delete:
       tags:
@@ -95,7 +95,7 @@ paths:
           description: Rule's base not found
       security:
         - braas-auth:
-          - delete:rule
+            - delete:rule
         - braas-session-id: []
   #  /api/rules-base/{braasSessionId}/google-drive:
   #    get:
@@ -267,8 +267,8 @@ paths:
           description: Failed dependency
       security:
         - braas-auth:
-          - read:base
-          - execute:rule
+            - read:base
+            - execute:rule
         - braas-session-id: []
   /api/json-schema:
     post:

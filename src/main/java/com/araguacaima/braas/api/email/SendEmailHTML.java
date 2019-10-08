@@ -2,7 +2,6 @@ package com.araguacaima.braas.api.email;
 
 import com.araguacaima.braas.api.Server;
 import com.araguacaima.braas.core.MessageType;
-import com.araguacaima.commons.utils.OSValidator;
 import com.sun.mail.smtp.SMTPTransport;
 import de.neuland.jade4j.Jade4J;
 import org.apache.commons.lang3.StringUtils;
@@ -14,10 +13,7 @@ import javax.mail.MessagingException;
 import javax.mail.Session;
 import javax.mail.internet.InternetAddress;
 import javax.mail.internet.MimeMessage;
-import java.io.ByteArrayInputStream;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
+import java.io.*;
 import java.net.URISyntaxException;
 import java.net.URL;
 import java.util.Collection;
@@ -33,8 +29,8 @@ public class SendEmailHTML extends SendEmail {
     private final boolean starttls;
     private final String imageResourceName = Server.basePath + "/img/braas_116x116.png";
     private final String emailJadeTemplate = "web/views/email-template.jade";
-    private String templateFile;
     private final Properties properties;
+    private String templateFile;
 
     SendEmailHTML(Properties properties) {
         this.host = properties.getProperty("mail.server.host");
@@ -48,7 +44,7 @@ public class SendEmailHTML extends SendEmail {
         URL resourceTemplate = SendEmailHTML.class.getClassLoader().getResource(emailJadeTemplate);
         try {
             templateFile = resourceTemplate.toURI().getPath();
-            if (OSValidator.isWindows() && templateFile.startsWith("/")) {
+            if (templateFile.startsWith(String.valueOf(File.separatorChar))) {
                 templateFile = templateFile.substring(1);
             }
         } catch (URISyntaxException | NullPointerException e) {

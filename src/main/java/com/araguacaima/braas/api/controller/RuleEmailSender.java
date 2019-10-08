@@ -1,6 +1,7 @@
 package com.araguacaima.braas.api.controller;
 
 
+import com.araguacaima.braas.api.email.MailSender;
 import com.araguacaima.braas.api.email.MailSenderFactory;
 import com.araguacaima.braas.api.email.MailType;
 import com.araguacaima.braas.core.google.model.Config;
@@ -26,7 +27,14 @@ public class RuleEmailSender {
     private static final Logger log = LoggerFactory.getLogger(RuleEmailSender.class);
 
     /**
-     * Log a trace message from a rule
+     * Sends an email from a fired rule
+     */
+    public static void send(final String message) {
+        send(message, null);
+    }
+
+    /**
+     * Sends an email from a fired rule
      */
     public static void send(final String message, final Map<String, Object> parameters) {
         String message1 = message;
@@ -34,17 +42,21 @@ public class RuleEmailSender {
             message1 = URLDecoder.decode(message, DEFAULT_ENCODING);
         } catch (UnsupportedEncodingException ignored) {
         }
-        final String formattedMessage = String.format(message1, parameters);
         try {
+            MailSender mailSender = MailSenderFactory.getInstance().getMailSender(MailType.HTML);
             Collection<Config> configs = MongoAccess.getAll(Config.class, "configs");
-            String to = StringUtils.defaultIfBlank((String) parameters.get("to"), IterableUtils.find(configs, (config -> "mail.server.username".equals(config.getKey()))).getValue());
-            String from = StringUtils.defaultIfBlank((String) parameters.get("from"), IterableUtils.find(configs, (config -> "mail.server.username".equals(config.getKey()))).getValue());
-            String subject = StringUtils.defaultIfBlank((String) parameters.get("subject"), IterableUtils.find(configs, (config -> "subject".equals(config.getKey()))).getValue());
-            MailSenderFactory.getInstance().getMailSender(MailType.HTML).sendMessage(to, from, subject, Collections.singletonList(message));
+            String to = IterableUtils.find(configs, (config -> "mail.server.username".equals(config.getKey()))).getValue();
+            String from = IterableUtils.find(configs, (config -> "mail.server.username".equals(config.getKey()))).getValue();
+            String subject = IterableUtils.find(configs, (config -> "subject".equals(config.getKey()))).getValue();
+            if (parameters != null) {
+                to = StringUtils.defaultIfBlank((String) parameters.get("to"), to);
+                from = StringUtils.defaultIfBlank((String) parameters.get("from"), from);
+                subject = StringUtils.defaultIfBlank((String) parameters.get("subject"), subject);
+            }
+            mailSender.sendMessage(to, from, subject, Collections.singletonList(message1));
         } catch (IOException e) {
             e.printStackTrace();
         }
-        log.trace(formattedMessage);
     }
 
 }

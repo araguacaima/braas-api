@@ -50,12 +50,11 @@ public class MongoAccess {
             return null;
         } else {
             for (T document : collection.find()) {
-                result.add(jsonUtils.fromJSON(document.toString(), clazz));
+                result.add(document);
             }
             return result;
         }
     }
-
 
     public static Map getAllAsMap(String collectionName) throws IOException {
         MongoCollection collection = database.getCollection(collectionName);

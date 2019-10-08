@@ -1,6 +1,6 @@
 package com.araguacaima.braas.api.controller;
 
-
+import com.araguacaima.braas.api.common.Commons;
 import com.araguacaima.braas.api.email.MailSender;
 import com.araguacaima.braas.api.email.MailSenderFactory;
 import com.araguacaima.braas.api.email.MailType;
@@ -44,7 +44,7 @@ public class RuleEmailSender {
         }
         try {
             MailSender mailSender = MailSenderFactory.getInstance().getMailSender(MailType.HTML);
-            Collection<Config> configs = MongoAccess.getAll(Config.class, "configs");
+            Collection<Config> configs = MongoAccess.getAll(Config.class, Commons.BRAAS_CONFIG_PARAM);
             String to = IterableUtils.find(configs, (config -> "mail.server.username".equals(config.getKey()))).getValue();
             String from = IterableUtils.find(configs, (config -> "mail.server.username".equals(config.getKey()))).getValue();
             String subject = IterableUtils.find(configs, (config -> "subject".equals(config.getKey()))).getValue();

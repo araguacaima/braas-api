@@ -1,5 +1,6 @@
 package com.araguacaima.braas.api.email;
 
+import com.araguacaima.braas.api.Server;
 import com.araguacaima.braas.core.MessageType;
 import com.araguacaima.commons.utils.OSValidator;
 import com.sun.mail.smtp.SMTPTransport;
@@ -30,7 +31,7 @@ public class SendEmailHTML extends SendEmail {
     private final String username;
     private final String password;
     private final boolean starttls;
-    private final String imageResourceName = "web/public/img/braas.png";
+    private final String imageResourceName = Server.basePath + "/img/braas_116x116.png";
     private final String emailJadeTemplate = "web/views/email-template.jade";
     private String templateFile;
     private final Properties properties;

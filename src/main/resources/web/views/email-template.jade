@@ -9,7 +9,7 @@ html(lang="en")
                     table(style="width: 100%;")
                         tr
                             td(align='left')
-                                img(src="cid:" + imageResourceName, alt='OpenArchi logo', height="50px", style="max-width: 100%")
+                                img(src="cid:" + imageResourceName, alt='BraaS logo', height="50px", style="max-width: 100%")
                             td(align='right')
                                 h6(style="line-height: 1.1; margin-bottom: 15px; color: #000;font-weight: 600; font-size: 22px; text-transform: capitalize; color: #444;margin: 0 !important;")= title
         h4(style="font-size: 20px !important; text-transform: capitalize; line-height: 3rem; font-weight: 400 !important; color: #2cc7c9 !important;") Report
@@ -27,3 +27,5 @@ html(lang="en")
                             td(style="background-color: #f99587; text-align: left; font-weight: bold;")= message.comment
                         if message.type == messageTypeInfo
                             td(style="text-align: left; font-weight: bold;")= message.comment
+                        unless
+                            td(style="text-align: left; font-weight: bold;")= message

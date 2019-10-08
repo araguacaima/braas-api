@@ -1,5 +1,6 @@
 package com.araguacaima.braas.api.email;
 
+import com.araguacaima.braas.api.common.Commons;
 import com.araguacaima.braas.api.controller.MongoAccess;
 import com.araguacaima.braas.core.google.model.Config;
 import com.araguacaima.braas.core.google.wrapper.ConfigWrapper;
@@ -15,7 +16,7 @@ public class MailSenderFactory {
     }
 
     public MailSender getMailSender(MailType type) throws IOException {
-        Collection<Config> configs = MongoAccess.getAll(Config.class, "configs");
+        Collection<Config> configs = MongoAccess.getAll(Config.class, Commons.BRAAS_CONFIG_PARAM);
         switch (type) {
             case SMTP:
                 return new SendEmailSMTP(ConfigWrapper.toProperties(configs));

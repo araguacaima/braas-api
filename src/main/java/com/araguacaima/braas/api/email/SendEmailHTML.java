@@ -4,6 +4,7 @@ import com.araguacaima.braas.core.MessageType;
 import com.araguacaima.commons.utils.OSValidator;
 import com.sun.mail.smtp.SMTPTransport;
 import de.neuland.jade4j.Jade4J;
+import org.apache.commons.lang3.StringUtils;
 
 import javax.activation.DataHandler;
 import javax.activation.DataSource;
@@ -28,15 +29,21 @@ public class SendEmailHTML extends SendEmail {
     private final String host;
     private final String username;
     private final String password;
+    private final boolean starttls;
     private final String imageResourceName = "web/public/img/braas.png";
     private final String emailJadeTemplate = "web/views/email-template.jade";
     private String templateFile;
+    private final Properties properties;
 
     SendEmailHTML(Properties properties) {
         this.host = properties.getProperty("mail.server.host");
         this.username = properties.getProperty("mail.server.username");
         this.password = properties.getProperty("mail.server.password");
-
+        String starttlsProperty = properties.getProperty("mail.smtp.starttls.enable");
+        this.starttls = StringUtils.isBlank(starttlsProperty) || Boolean.parseBoolean(starttlsProperty);
+        this.properties = System.getProperties();
+        this.properties.putAll(properties);
+        this.properties.put("mail.smtp.starttls.enable", this.starttls);
         URL resourceTemplate = SendEmailHTML.class.getClassLoader().getResource(emailJadeTemplate);
         try {
             templateFile = resourceTemplate.toURI().getPath();

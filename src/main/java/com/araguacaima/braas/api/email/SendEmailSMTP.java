@@ -12,18 +12,16 @@ import java.util.Collection;
 import java.util.Date;
 import java.util.Properties;
 
-public class SendEmailSMTP implements MailSender {
+public class SendEmailSMTP extends SendEmail {
 
     private final String host;
     private final int port;
-    private final String protocol;
     private final String username;
     private final String password;
 
-    public SendEmailSMTP(Properties properties) {
+    SendEmailSMTP(Properties properties) {
         this.host = properties.getProperty("mail.server.host");
         this.port = Integer.parseInt(properties.getProperty("mail.server.port"));
-        this.protocol = properties.getProperty("mail.server.protocol");
         this.username = properties.getProperty("mail.server.username");
         this.password = properties.getProperty("mail.server.password");
     }

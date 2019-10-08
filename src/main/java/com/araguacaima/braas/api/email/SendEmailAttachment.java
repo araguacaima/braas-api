@@ -25,18 +25,14 @@ import static com.araguacaima.braas.api.common.Commons.jsonUtils;
 import static com.araguacaima.braas.core.Commons.reflectionUtils;
 
 
-public class SendEmailAttachment implements MailSender {
+public class SendEmailAttachment extends SendEmail {
     private static final String OCTET_STREAM_MIME = "application/octet-stream";
     private final String host;
-    private final int port;
-    private final String protocol;
     private final String username;
     private final String password;
 
-    public SendEmailAttachment(Properties properties) {
+    SendEmailAttachment(Properties properties) {
         this.host = properties.getProperty("mail.server.host");
-        this.port = Integer.parseInt(properties.getProperty("mail.server.port"));
-        this.protocol = properties.getProperty("mail.server.protocol");
         this.username = properties.getProperty("mail.server.username");
         this.password = properties.getProperty("mail.server.password");
     }

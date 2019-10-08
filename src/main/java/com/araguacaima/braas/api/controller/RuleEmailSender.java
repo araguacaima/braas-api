@@ -3,6 +3,8 @@ package com.araguacaima.braas.api.controller;
 
 import com.araguacaima.braas.api.email.MailSenderFactory;
 import com.araguacaima.braas.api.email.MailType;
+import com.araguacaima.braas.core.google.model.Config;
+import org.apache.commons.collections4.IterableUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -10,6 +12,7 @@ import org.slf4j.LoggerFactory;
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.net.URLDecoder;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.Map;
 
@@ -32,12 +35,11 @@ public class RuleEmailSender {
         } catch (UnsupportedEncodingException ignored) {
         }
         final String formattedMessage = String.format(message1, parameters);
-
         try {
-            Map configs = MongoAccess.getAllAsMap("configs");
-            String to = StringUtils.defaultIfBlank((String) parameters.get("to"), configs.get("default-email-to").toString());
-            String from = StringUtils.defaultIfBlank((String) parameters.get("from"), configs.get("default-email-from").toString());
-            String subject = StringUtils.defaultIfBlank((String) parameters.get("subject"), configs.get("default-email.subject").toString());
+            Collection<Config> configs = MongoAccess.getAll(Config.class, "configs");
+            String to = StringUtils.defaultIfBlank((String) parameters.get("to"), IterableUtils.find(configs, (config -> "mail.server.username".equals(config.getKey()))).getValue());
+            String from = StringUtils.defaultIfBlank((String) parameters.get("from"), IterableUtils.find(configs, (config -> "mail.server.username".equals(config.getKey()))).getValue());
+            String subject = StringUtils.defaultIfBlank((String) parameters.get("subject"), IterableUtils.find(configs, (config -> "subject".equals(config.getKey()))).getValue());
             MailSenderFactory.getInstance().getMailSender(MailType.HTML).sendMessage(to, from, subject, Collections.singletonList(message));
         } catch (IOException e) {
             e.printStackTrace();

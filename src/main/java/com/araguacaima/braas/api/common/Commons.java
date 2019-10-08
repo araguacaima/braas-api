@@ -18,7 +18,6 @@ import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 import org.apache.commons.beanutils.BeanMap;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.collections4.IterableUtils;
-import org.apache.commons.collections4.MapUtils;
 import org.apache.commons.collections4.map.CaseInsensitiveMap;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.StringUtils;
@@ -107,11 +106,13 @@ public class Commons {
     public static final String JSON_SCHEMA_FILE_NAME = "braas-json-schemas.json";
     public static final String SPREADSHEET_FILE_EXTENSION = ".xlsx";
     public static final String BRAAS_RULES_FILE_NAME = "braas-rules.xlsx";
+    public static final String EMAIL = "email";
 
     public static ZipUtils zipUtils = ZipUtils.getInstance();
     public static JarUtils jarUtils = JarUtils.getInstance();
 
     private static Logger log = LoggerFactory.getLogger(Commons.class);
+    public static MapUtils mapUtils = MapUtils.getInstance();
     public static final ExceptionHandler exceptionHandler = new ExceptionHandlerImpl(Exception.class) {
         @Override
         public void handle(Exception exception, Request request, Response response) {
@@ -459,8 +460,8 @@ public class Commons {
     }
 
     public static Collection<Object> validate(Map model, Map<String, String> rulesConfig) throws Exception {
-        if (MapUtils.isNotEmpty(rulesConfig)) {
-            Properties properties = MapUtils.toProperties(rulesConfig);
+        if (org.apache.commons.collections4.MapUtils.isNotEmpty(rulesConfig)) {
+            Properties properties = mapUtils.toProperties(rulesConfig);
             DroolsConfig droolsConfig = new DroolsConfig(properties);
             InputStream credentialsStream = new StringBufferInputStream(rulesConfig.get("credentials"));
             droolsConfig.setCredentialsStream(credentialsStream);

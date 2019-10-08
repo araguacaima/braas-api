@@ -1,11 +1,12 @@
 package com.araguacaima.braas.api;
 
 import com.araguacaima.braas.api.common.Commons;
-import com.araguacaima.braas.api.controller.MongoAccess;
+import com.araguacaima.braas.api.email.MailSenderFactory;
+import com.araguacaima.braas.api.email.MailType;
+import com.araguacaima.braas.api.model.Email;
 import com.araguacaima.braas.api.routes.Admin;
 import com.araguacaima.braas.api.routes.Api;
 import com.araguacaima.braas.api.routes.Braas;
-import com.araguacaima.braas.core.google.model.Config;
 import com.araguacaima.commons.utils.MapUtils;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -28,7 +29,6 @@ import static com.araguacaima.braas.api.common.Commons.*;
 import static com.araguacaima.braas.api.common.Security.setCORS;
 import static spark.Spark.*;
 
-@SuppressWarnings("UnstableApiUsage")
 public class Server {
 
     public static JadeConfiguration config = new JadeConfiguration();
@@ -70,7 +70,7 @@ public class Server {
         config.setBasePath(basePath);
         config.getSharedVariables().put("basePath", basePath);
         config.setPrettyPrint(true);
-
+/*
         Config config1 = new Config("mail.debug", "false");
         Config config2 = new Config("mail.server.protocol", "smtp");
         Config config3 = new Config("mail.smtp.auth", "true");
@@ -89,7 +89,7 @@ public class Server {
         MongoAccess.storeConfig("braas_config", config6);
         MongoAccess.storeConfig("braas_config", config7);
         MongoAccess.storeConfig("braas_config", config8);
-        MongoAccess.storeConfig("braas_config", config9);
+        MongoAccess.storeConfig("braas_config", config9);*/
     }
 
     private static int getAssignedPort() {
@@ -126,6 +126,16 @@ public class Server {
         //path(Api.ApiGoogleDrive.PATH, new Api.ApiGoogleDrive());
         path(Api.ApiBinary.PATH, new Api.ApiBinary());
         path(Admin.PATH, new Admin());
+        post(EMAIL, (request, response) -> {
+            try {
+                Email email = jsonUtils.fromJSON(request.body(), Email.class);
+                MailSenderFactory.getInstance().getMailSender(MailType.HTML).sendMessage(email);
+            } catch (Throwable t) {
+                return Commons.throwError(response, 500, t);
+            }
+            return EMPTY_RESPONSE;
+        });
+
         log.info("Server listen on port '" + assignedPort + "'");
     }
 

@@ -23,21 +23,17 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Properties;
 
-public class SendEmailHTML implements MailSender {
+public class SendEmailHTML extends SendEmail {
     private static final String TEXT_HTML = "text/html";
     private final String host;
-    private final int port;
-    private final String protocol;
     private final String username;
     private final String password;
     private final String imageResourceName = "web/public/img/braas.png";
     private final String emailJadeTemplate = "web/views/email-template.jade";
     private String templateFile;
 
-    public SendEmailHTML(Properties properties) {
+    SendEmailHTML(Properties properties) {
         this.host = properties.getProperty("mail.server.host");
-        this.port = Integer.parseInt(properties.getProperty("mail.server.port"));
-        this.protocol = properties.getProperty("mail.server.protocol");
         this.username = properties.getProperty("mail.server.username");
         this.password = properties.getProperty("mail.server.password");
 
@@ -47,7 +43,7 @@ public class SendEmailHTML implements MailSender {
             if (OSValidator.isWindows() && templateFile.startsWith("/")) {
                 templateFile = templateFile.substring(1);
             }
-        } catch (URISyntaxException e) {
+        } catch (URISyntaxException | NullPointerException e) {
             e.printStackTrace();
         }
 

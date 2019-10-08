@@ -31,6 +31,10 @@
         <appender-ref ref="STDOUT"/>
     </logger>
 
+    <logger name="com.araguacaima.braas.core.RuleLogging" level="TRACE" additivity="false">
+        <appender-ref ref="STDOUT"/>
+    </logger>
+
     <!-- By default, the level of the root level is set to DEBUG -->
     <root level="${LOG_LEVEL}">
         <appender-ref ref="STDOUT"/>

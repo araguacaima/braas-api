@@ -176,9 +176,16 @@ public class ApiController {
             for (String globalIdentifier : droolsUtils.getGlobalsDefinedInSheets()) {
                 Object globalToBeAdded = droolsUtils.getGlobals().get(globalIdentifier);
                 if (globalToBeAdded != null && !globalToBeAdded.getClass().equals(Object.class)) {
-                    HashMap hashMap = new HashMap();
-                    hashMap.put(globalIdentifier, globalToBeAdded);
-                    result.add(hashMap);
+                    Class clazz = globalToBeAdded.getClass();
+                    if (reflectionUtils.isCollectionImplementation(clazz)) {
+                        result.addAll((Collection) globalToBeAdded);
+                    } else if (reflectionUtils.isMapImplementation(clazz)) {
+                        result.add(globalToBeAdded);
+                    } else {
+                        HashMap hashMap = new HashMap();
+                        hashMap.put(globalIdentifier, globalToBeAdded);
+                        result.add(hashMap);
+                    }
                 }
             }
         }

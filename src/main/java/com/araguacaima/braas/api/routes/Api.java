@@ -264,7 +264,7 @@ public class Api implements RouteGroup {
                     if (classLoader != null) {
                         DroolsConfig droolsConfig = ApiController.createDroolsConfig(binary, classLoader, null, Constants.URL_RESOURCE_STRATEGIES.ABSOLUTE_DECISION_TABLE_PATH);
                         try {
-                            new DroolsUtils(droolsConfig);
+                            new DroolsUtils(droolsConfig, false);
                         } catch (Throwable t) {
                             ctx.setSessionAttribute(BRAAS_DROOLS_PARAM, null);
                             ctx.setSessionAttribute(DROOLS_CONFIG_PARAM, null);

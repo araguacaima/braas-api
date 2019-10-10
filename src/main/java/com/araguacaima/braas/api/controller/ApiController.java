@@ -178,9 +178,15 @@ public class ApiController {
                 if (globalToBeAdded != null && !globalToBeAdded.getClass().equals(Object.class)) {
                     Class clazz = globalToBeAdded.getClass();
                     if (reflectionUtils.isCollectionImplementation(clazz)) {
-                        result.addAll((Collection) globalToBeAdded);
+                        Collection globalToBeAdded1 = (Collection) globalToBeAdded;
+                        if (!globalToBeAdded1.isEmpty()) {
+                            result.addAll(globalToBeAdded1);
+                        }
                     } else if (reflectionUtils.isMapImplementation(clazz)) {
-                        result.add(globalToBeAdded);
+                        Map globalToBeAdded1 = (Map) globalToBeAdded;
+                        if (!globalToBeAdded1.isEmpty()) {
+                            result.add(globalToBeAdded);
+                        }
                     } else {
                         HashMap hashMap = new HashMap();
                         hashMap.put(globalIdentifier, globalToBeAdded);

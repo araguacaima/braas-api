@@ -108,9 +108,10 @@ public class Commons {
     public static final String BRAAS_RULES_FILE_NAME = "braas-rules.xlsx";
     public static final String EMAIL = "email";
 
-    public static ZipUtils zipUtils = ZipUtils.getInstance();
-    public static JarUtils jarUtils = JarUtils.getInstance();
-    public static MapUtils mapUtils = MapUtils.getInstance();
+    public static final ZipUtils zipUtils = ZipUtils.getInstance();
+    public static final JarUtils jarUtils = JarUtils.getInstance();
+    public static final MapUtils mapUtils = MapUtils.getInstance();
+    public static final FileUtils fileUtils = new FileUtils();
     private static Logger log = LoggerFactory.getLogger(Commons.class);
     public static final ExceptionHandler exceptionHandler = new ExceptionHandlerImpl(Exception.class) {
         @Override

@@ -244,6 +244,10 @@ public class Api implements RouteGroup {
                     String rulesPath;
                     try {
                         rulesPath = ApiController.extractSpreadSheet(request, rulesDir);
+                        FileUtils.deleteQuietly(sourceClassesDir);
+                        sourceClassesDir.mkdirs();
+                        FileUtils.deleteQuietly(compiledClassesDir);
+                        compiledClassesDir.mkdirs();
                     } catch (Throwable t) {
                         ctx.setSessionAttribute(BRAAS_DROOLS_PARAM, null);
                         ctx.setSessionAttribute(DROOLS_CONFIG_PARAM, null);

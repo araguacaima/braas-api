@@ -1,12 +1,12 @@
 package com.araguacaima.braas.api.controller;
 
-import com.araguacaima.braas.api.exception.InternalBraaSException;
 import com.araguacaima.braas.api.model.BraasDrools;
 import com.araguacaima.braas.core.Constants;
 import com.araguacaima.braas.core.RuleMessageWarning;
 import com.araguacaima.braas.core.drools.DroolsConfig;
 import com.araguacaima.braas.core.drools.DroolsURLClassLoader;
 import com.araguacaima.braas.core.drools.DroolsUtils;
+import com.araguacaima.braas.core.exception.InternalBraaSException;
 import com.araguacaima.commons.exception.core.PropertiesUtilException;
 import com.araguacaima.commons.utils.FileUtils;
 import com.araguacaima.commons.utils.JsonSchemaUtils;

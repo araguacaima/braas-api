@@ -173,7 +173,7 @@ public class ApiController {
                 }
             }
 
-            for (String globalIdentifier : droolsUtils.getGlobalsDefinedInSheets()) {
+            for (String globalIdentifier : droolsUtils.getGlobalsFromRules()) {
                 Object globalToBeAdded = droolsUtils.getGlobals().get(globalIdentifier);
                 if (globalToBeAdded != null && !globalToBeAdded.getClass().equals(Object.class)) {
                     Class clazz = globalToBeAdded.getClass();

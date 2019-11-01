@@ -137,6 +137,7 @@ public class Api implements RouteGroup {
             final SparkWebContext ctx = new SparkWebContext(request, response);
             Locale locale = null;
             String localeStr = request.queryParams("locale");
+            log.info("Incoming locale: " + localeStr);
             try {
                 if (StringUtils.isNotBlank(localeStr)) {
                     locale = LocaleUtils.toLocale(localeStr);

@@ -145,6 +145,7 @@ public class Api implements RouteGroup {
             } catch (IllegalArgumentException ignored) {
 
             }
+            log.info("Transformed incoming locale: " + locale.getLanguage());
             String rulesTabName = request.queryParams("rules-tab-name");
             try {
                 if (StringUtils.isBlank(rulesTabName)) {

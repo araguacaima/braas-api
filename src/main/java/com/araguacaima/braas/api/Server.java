@@ -21,12 +21,12 @@ import javax.servlet.MultipartConfigElement;
 import java.io.File;
 import java.io.IOException;
 import java.net.URL;
-import java.util.HashMap;
 import java.util.Map;
 import java.util.Properties;
 
 import static com.araguacaima.braas.api.common.Commons.*;
 import static com.araguacaima.braas.api.common.Security.setCORS;
+import static com.araguacaima.braas.core.Constants.environment;
 import static spark.Spark.*;
 
 public class Server {
@@ -37,13 +37,10 @@ public class Server {
     public static String deployedServer;
     public static String basePath;
     public static MultipartConfigElement multipartConfigElement;
-    public static Map<String, String> environment;
     private static TemplateLoader templateLoader = new Loader("web/views");
     private static Logger log = LoggerFactory.getLogger(Server.class);
-    private static ProcessBuilder processBuilder = new ProcessBuilder();
 
     static {
-        environment = new HashMap<>(processBuilder.environment());
         URL url = Server.class.getResource("/config/config.properties");
         Properties properties = new Properties();
         try {

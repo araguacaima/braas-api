@@ -16,8 +16,8 @@ import org.bson.conversions.Bson;
 import java.io.IOException;
 import java.util.*;
 
-import static com.araguacaima.braas.api.Server.environment;
 import static com.araguacaima.braas.api.common.Commons.jsonUtils;
+import static com.araguacaima.braas.core.Constants.environment;
 import static com.mongodb.client.model.Filters.eq;
 import static com.mongodb.client.model.Updates.combine;
 import static com.mongodb.client.model.Updates.set;

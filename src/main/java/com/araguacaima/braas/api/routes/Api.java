@@ -141,11 +141,11 @@ public class Api implements RouteGroup {
             try {
                 if (StringUtils.isNotBlank(localeStr)) {
                     locale = LocaleUtils.toLocale(localeStr);
+                    log.info("Transformed incoming locale: " + locale.getLanguage());
                 }
             } catch (IllegalArgumentException ignored) {
 
             }
-            log.info("Transformed incoming locale: " + locale.getLanguage());
             String rulesTabName = request.queryParams("rules-tab-name");
             try {
                 if (StringUtils.isBlank(rulesTabName)) {

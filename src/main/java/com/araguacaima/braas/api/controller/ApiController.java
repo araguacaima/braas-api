@@ -150,7 +150,9 @@ public class ApiController {
             DroolsUtils droolsUtils = new DroolsUtils(droolsConfig);
             Map<String, Object> globals = new HashMap<>();
             Locale locale = droolsConfig.getLocale();
+
             if (locale != null) {
+                log.info("Drools config locale: " + locale.getLanguage());
                 globals.put("locale", locale.getLanguage());
             } else {
                 globals.put("locale", Locale.ENGLISH.getLanguage());

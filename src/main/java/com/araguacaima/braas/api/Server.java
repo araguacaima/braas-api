@@ -55,7 +55,7 @@ public class Server {
         } catch (IOException e) {
             e.printStackTrace();
         }
-        log.trace("Properties: " + environment);
+        log.info("Properties: " + environment);
         config.setTemplateLoader(templateLoader);
         ObjectMapper mapper = jsonUtils.getMapper();
         mapper.setSerializationInclusion(JsonInclude.Include.NON_NULL);

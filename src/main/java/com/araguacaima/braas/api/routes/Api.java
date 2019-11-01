@@ -140,7 +140,7 @@ public class Api implements RouteGroup {
             log.info("Incoming locale: " + localeStr);
             try {
                 if (StringUtils.isNotBlank(localeStr)) {
-                    locale = LocaleUtils.toLocale(localeStr);
+                    locale = LocaleUtils.toLocale(localeStr.toLowerCase());
                     log.info("Transformed incoming locale: " + locale.getLanguage());
                 }
             } catch (IllegalArgumentException ignored) {

@@ -258,18 +258,22 @@ public class ApiController {
 
     private static Object bindSingleAssetToObject(String asset, Class[] classes, ObjectMapper mapper) throws IOException, InternalBraaSException {
         Object json = null;
+        Class foundClass = null;
         for (Class<?> clazz : classes) {
             try {
                 json = jsonUtils.fromJSON(mapper, asset, clazz);
+                foundClass = clazz;
                 break;
             } catch (MismatchedInputException ignored1) {
-                log.error(ignored1.getMessage());
+                log.warn(ignored1.getMessage());
             }
         }
         if (json == null) {
             throw new InternalBraaSException("There is no provided schema that satisfy incoming asset. " +
                     "Each asset provided must be compliant with some object definition in provided schema. " +
                     "Is not admissible attempting to use an unrecognized or absent property within any of incoming assets");
+        } else {
+            log.info("Incoming asset '" + asset + "' binded to type '" + foundClass.getName() + "'");
         }
         return json;
     }

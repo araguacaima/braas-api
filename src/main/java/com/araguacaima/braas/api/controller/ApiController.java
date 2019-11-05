@@ -210,6 +210,7 @@ public class ApiController {
             } catch (Throwable ignored) {
                 assetsStr = request.body();
             }
+            log.info("Incoming assets: " + assetsStr);
             Class[] classes = com.araguacaima.braas.core.Commons.getClassesFromClassLoader(classLoader);
             ObjectMapper mapper = new ObjectMapper();
             mapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true);

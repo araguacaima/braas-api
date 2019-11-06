@@ -32,6 +32,8 @@ import java.util.*;
 
 import static com.araguacaima.braas.api.Server.engine;
 import static com.araguacaima.braas.api.common.Commons.*;
+import static com.araguacaima.braas.core.Commons.encodeFileToBase64;
+import static com.araguacaima.braas.core.Commons.getFileExtension;
 import static java.net.HttpURLConnection.*;
 import static spark.Spark.*;
 
@@ -75,7 +77,7 @@ public class Api implements RouteGroup {
                     String contentType = part.getContentType();
                     if (ZIP_COMPRESSED_MIME.equalsIgnoreCase(contentType) || ZIP_MIME.equalsIgnoreCase(contentType)) {
                         File file = new File(classesPath);
-                        String extension = Commons.getFileExtension(file);
+                        String extension = getFileExtension(file);
                         folderName = file.getName().replace("." + extension, StringUtils.EMPTY);
                         destinationDir = uploadDir.getCanonicalPath() + File.separator + folderName;
                         //noinspection ResultOfMethodCallIgnored
@@ -90,7 +92,7 @@ public class Api implements RouteGroup {
                     String contentType = part.getContentType();
                     if (JAR_MIME.equalsIgnoreCase(contentType) || OCTET_STREAM_MIME.equalsIgnoreCase(contentType)) {
                         File file = new File(classesPath);
-                        String extension = Commons.getFileExtension(file);
+                        String extension = getFileExtension(file);
                         folderName = file.getName().replace("." + extension, StringUtils.EMPTY);
                         destinationDir = uploadDir.getCanonicalPath() + File.separator + folderName;
                         //noinspection ResultOfMethodCallIgnored
@@ -203,7 +205,7 @@ public class Api implements RouteGroup {
                 String rulesPath;
                 try {
                     rulesPath = ApiController.extractSpreadSheet(request, uploadDir);
-                    String encoded = Commons.encodeFileToBase64(rulesPath);
+                    String encoded = encodeFileToBase64(rulesPath);
                     response.status(HTTP_OK);
                     response.type(TEXT_PLAIN);
                     return encoded;

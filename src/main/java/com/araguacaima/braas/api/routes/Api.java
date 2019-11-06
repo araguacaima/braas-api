@@ -160,13 +160,12 @@ public class Api implements RouteGroup {
 
             BraasDrools braasDrools = MongoAccess.getBraasDroolsById(BRAAS_DROOLS_PARAM, braasSessionId);
             if (braasDrools == null) {
-                return Commons.throwError(response, 424, new Exception("Rule base spreadsheet is not present on request not previously provided. Make sure you provide it according to API specification [http://braaservice.com/api#/Rules_base]"));
+                return Commons.throwError(response, 424, new Exception("Rule base spreadsheet is not present on request or it's not previously provided. Make sure you provide it according to API specification [http://braaservice.com/api#/Rules_base]"));
             } else {
                 if (braasDrools.getSpreadsheet() == null || braasDrools.getSpreadsheet().getBinary() == null) {
-                    return Commons.throwError(response, 424, new Exception("Rule base spreadsheet is not present on request not previously provided. Make sure you provide it according to API specification [http://braaservice.com/api#/Rules_base]"));
+                    return Commons.throwError(response, 424, new Exception("Rule base spreadsheet is not present on request or it's not previously provided. Make sure you provide it according to API specification [http://braaservice.com/api#/Rules_base]"));
                 }
             }
-
             DroolsConfig droolsConfig = (DroolsConfig) ctx.getSessionAttribute(DROOLS_CONFIG_PARAM);
             if (droolsConfig == null) {
                 try {
@@ -182,7 +181,7 @@ public class Api implements RouteGroup {
                         return Commons.throwError(response, HTTP_INTERNAL_ERROR, new Exception("It was not possible to load your provided schema to be used later in your rule's base"));
                     }
                 } catch (Throwable t) {
-                    return Commons.throwError(response, 424, new Exception("Rule base spreadsheet is not present on request not previously provided. Make sure you provide it according to API specification [http://braaservice.com/api#/Rules_base]", t));
+                    return Commons.throwError(response, 424, new Exception("Rule base spreadsheet is invalid or corrupted. Make sure you have provided it according to API specification [http://braaservice.com/api#/Rules_base]", t));
                 }
             }
             droolsConfig.setLocale(locale);
@@ -375,7 +374,29 @@ public class Api implements RouteGroup {
                     }
                     URLClassLoader classLoader = ApiController.buildClassesFromSchema(braasDrools, sourceClassesDir, compiledClassesDir);
                     if (classLoader != null) {
-                        response.status(HTTP_CREATED);
+                        String binary = braasDrools.getSpreadsheet().getBinary();
+                        DroolsConfig droolsConfig = ApiController.createDroolsConfig(binary, classLoader, null, Constants.URL_RESOURCE_STRATEGIES.ABSOLUTE_DECISION_TABLE_PATH);
+                        try {
+                            new DroolsUtils(droolsConfig, false);
+                        } catch (Throwable t) {
+                            ctx.setSessionAttribute(BRAAS_DROOLS_PARAM, null);
+                            ctx.setSessionAttribute(DROOLS_CONFIG_PARAM, null);
+                            return Commons.throwError(response, HTTP_INTERNAL_ERROR, new Exception("Can not parse rule's spreadsheet", t));
+                        }
+                        ctx.setSessionAttribute(DROOLS_CONFIG_PARAM, droolsConfig);
+                        BraasDrools.Spreadsheet spreadsheet_ = new BraasDrools.Spreadsheet();
+                        spreadsheet_.setBinary(binary);
+                        braasDrools.setSpreadsheet(spreadsheet_);
+                        BraasDrools braasDrools_ = MongoAccess.updateBraasDrools(BRAAS_DROOLS_PARAM, braasDrools);
+                        if (braasDrools_ != null) {
+                            ctx.setSessionAttribute(DROOLS_CONFIG_PARAM, null);
+                            ctx.setSessionAttribute(BRAAS_DROOLS_PARAM, braasDrools_);
+                            response.status(HTTP_CREATED);
+                        } else {
+                            ctx.setSessionAttribute(BRAAS_DROOLS_PARAM, null);
+                            ctx.setSessionAttribute(DROOLS_CONFIG_PARAM, null);
+                            return Commons.throwError(response, HTTP_INTERNAL_ERROR, new Exception("It was not possible to load your provided schema to be used later in your rule's base"));
+                        }
                     } else {
                         return Commons.throwError(response, HTTP_INTERNAL_ERROR, new Exception("It was not possible to load your provided schema to be used later in your rule's base"));
                     }

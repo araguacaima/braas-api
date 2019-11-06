@@ -154,8 +154,6 @@ public class ApiController {
             if (locale != null) {
                 log.info("Drools config locale: " + locale.getLanguage());
                 globals.put("locale", locale.getLanguage());
-            } else {
-                globals.put("locale", Locale.ENGLISH.getLanguage());
             }
             log.info("Locale set: " + globals.get("locale"));
             globals.put("logger", log);

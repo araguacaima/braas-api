@@ -154,8 +154,8 @@ public class ApiController {
             if (locale != null) {
                 log.info("Drools config locale: " + locale.getLanguage());
                 globals.put("locale", locale.getLanguage());
+                log.info("Locale set: " + globals.get("locale"));
             }
-            log.info("Locale set: " + globals.get("locale"));
             globals.put("logger", log);
             droolsUtils.addGlobals(globals);
             Object assets = extractAssets(request, droolsConfig.getClassLoader());

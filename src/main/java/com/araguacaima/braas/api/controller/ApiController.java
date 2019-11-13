@@ -65,7 +65,7 @@ public class ApiController {
             classLoader = new DroolsURLClassLoader(compiledClassesDir.toURI().toURL(), KieBase.class.getClassLoader());
             JsonSchemaUtils<URLClassLoader> jsonSchemaUtils = new JsonSchemaUtils<>(classLoader);
             if (StringUtils.isNotBlank(json)) {
-                log.info("Processing json: \n" + json);
+                //log.info("Processing json: \n" + json);
                 classLoader = jsonSchemaUtils.processFile_(json, null, sourceClassesDir, compiledClassesDir);
             }
         } catch (URISyntaxException | NoSuchFieldException | IllegalAccessException | IOException | InstantiationException e) {

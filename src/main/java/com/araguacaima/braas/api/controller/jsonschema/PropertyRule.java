@@ -130,7 +130,7 @@ public class PropertyRule extends org.jsonschema2pojo.rules.PropertyRule {
                                     log.info("#### classname: " + className);
                                     JDefinedClass removedClass = classes.remove(className);
                                     log.info("#### removedClass: " + removedClass);
-                                    //fieldClassesList.clear();
+                                    fieldClassesList.clear();
                                     //fieldClasses.set(outer1, classes);
                                     classes.forEach((key, value) -> fieldClassesList.add(value.name()));
                                     log.info("#### outer: " + outer1.name() + " | classes after: " + fieldClassesList);

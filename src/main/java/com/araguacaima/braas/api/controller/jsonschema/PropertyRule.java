@@ -135,7 +135,7 @@ public class PropertyRule extends org.jsonschema2pojo.rules.PropertyRule {
                                             newClasses.put(key, clazz_);
                                         }
                                     });
-                                    existentClasses.clear();
+                                    //existentClasses.clear();
                                     fieldClasses.set(outer1, newClasses);
                                     newClasses.forEach((key, value) -> fieldClassesList.add(value.name()));
                                     log.info("#### outer: " + outer1.name() + " | classes after: " + fieldClassesList);

@@ -127,8 +127,11 @@ public class PropertyRule extends org.jsonschema2pojo.rules.PropertyRule {
                                     Map<String, JDefinedClass> newClasses = new TreeMap<>();
                                     existentClasses.forEach((key, value) -> fieldClassesList.add(value.name()));
                                     log.info("#### outer: " + outer1.name() + " | existentClasses: " + fieldClassesList);
+                                    log.info("#### className: " + className);
                                     existentClasses.forEach((key, clazz_) -> {
+                                        log.info("#### key: " + key);
                                         if (!key.equals(className)) {
+                                            log.info("#### tal");
                                             newClasses.put(key, clazz_);
                                         }
                                     });

@@ -120,7 +120,7 @@ public class PropertyRule extends org.jsonschema2pojo.rules.PropertyRule {
                                 classesNew.put(className, jDefinedClass);
                                 Set<String> fieldClassesList = new LinkedHashSet<>();
                                 if (outer.isClass()) {
-                                    Field fieldClasses = JDefinedClass.class.getField("classes");
+                                    Field fieldClasses = JDefinedClass.class.getDeclaredField("classes");
                                     fieldClasses.setAccessible(true);
                                     JDefinedClass outer1 = (JDefinedClass) outer;
                                     Map<String, JDefinedClass> existentClasses = (Map<String, JDefinedClass>) fieldClasses.get(outer1);

@@ -16,7 +16,6 @@
 
 package com.araguacaima.braas.api.controller.jsonschema;
 
-import com.araguacaima.braas.api.common.Commons;
 import com.araguacaima.commons.utils.PackageClassUtils;
 import com.araguacaima.commons.utils.ReflectionUtils;
 import com.fasterxml.jackson.databind.JsonNode;
@@ -126,15 +125,15 @@ public class PropertyRule extends org.jsonschema2pojo.rules.PropertyRule {
                                     fieldClasses.setAccessible(true);
                                     JDefinedClass outer1 = (JDefinedClass) outer;
                                     Map<String, JDefinedClass> classes = (Map<String, JDefinedClass>) fieldClasses.get(outer1);
-                                    //classes.forEach((key, value) -> fieldClassesList.add(value.name()));
-                                    log.info("#### outer: " + outer1.name() + " | classes before: " + Commons.jsonUtils.toJSON(classes));
+                                    classes.forEach((key, value) -> fieldClassesList.add(value.name()));
+                                    log.info("#### outer: " + outer1.name() + " | classes before: " + fieldClassesList);
                                     log.info("#### classname: " + className);
                                     JDefinedClass removedClass = classes.remove(className);
                                     log.info("#### removedClass: " + removedClass);
-                                    //fieldClasses.set(outer1, classes);
                                     //fieldClassesList.clear();
-                                    //classes.forEach((key, value) -> fieldClassesList.add(value.name()));
-                                    log.info("#### outer: " + outer1.name() + " | classes after: " + Commons.jsonUtils.toJSON(classes));
+                                    //fieldClasses.set(outer1, classes);
+                                    classes.forEach((key, value) -> fieldClassesList.add(value.name()));
+                                    log.info("#### outer: " + outer1.name() + " | classes after: " + fieldClassesList);
                                 } else {
                                     log.info("#### outer '" + ((JPackage) outer).name() + "' is not a class");
                                 }

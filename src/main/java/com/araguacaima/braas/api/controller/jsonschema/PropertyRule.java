@@ -125,14 +125,19 @@ public class PropertyRule extends org.jsonschema2pojo.rules.PropertyRule {
                                     Field fieldClasses = reflectionUtils.getField(JDefinedClass.class, "classes");
                                     fieldClasses.setAccessible(true);
                                     JDefinedClass outer1 = (JDefinedClass) outer;
-                                    Map<String, JDefinedClass> classes = new TreeMap<>((Map<String, JDefinedClass>) fieldClasses.get(outer1));
-                                    classes.forEach((key, value) -> fieldClassesList.add(value.name()));
+                                    Map<String, JDefinedClass> existentClasses = (Map<String, JDefinedClass>) fieldClasses.get(outer1);
+                                    Map<String, JDefinedClass> newClasses = new TreeMap<>();
+                                    existentClasses.forEach((key, value) -> fieldClassesList.add(value.name()));
                                     log.info("#### outer: " + outer1.name() + " | classes before: " + fieldClassesList);
                                     log.info("#### classname: " + className);
-                                    JDefinedClass removedClass = classes.remove(className);
-                                    log.info("#### removedClass: " + removedClass);
-                                    fieldClasses.set(outer1, classes);
-                                    classes.forEach((key, value) -> fieldClassesList.add(value.name()));
+                                    existentClasses.forEach((key, clazz_) -> {
+                                        if (!key.equals(className)) {
+                                            newClasses.put(key, clazz_);
+                                        }
+                                    });
+                                    existentClasses.clear();
+                                    fieldClasses.set(outer1, newClasses);
+                                    newClasses.forEach((key, value) -> fieldClassesList.add(value.name()));
                                     log.info("#### outer: " + outer1.name() + " | classes after: " + fieldClassesList);
                                 } else {
                                     log.info("#### outer '" + ((JPackage) outer).name() + "' is not a class");

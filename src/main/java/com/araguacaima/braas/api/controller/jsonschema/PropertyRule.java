@@ -120,6 +120,7 @@ public class PropertyRule extends org.jsonschema2pojo.rules.PropertyRule {
                                     fieldClasses.setAccessible(true);
                                     JDefinedClass outer1 = (JDefinedClass) outer;
                                     Map<String, JDefinedClass> existentClasses = (Map<String, JDefinedClass>) fieldClasses.get(outer1);
+                                    existentClasses.remove(className);
                                     existentClasses.remove(className.toUpperCase());
                                 }
                             } catch (Throwable t) {

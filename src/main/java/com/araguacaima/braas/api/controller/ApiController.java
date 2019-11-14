@@ -1,6 +1,5 @@
 package com.araguacaima.braas.api.controller;
 
-import com.araguacaima.braas.api.controller.jsonschema.JsonSchemaUtils;
 import com.araguacaima.braas.api.model.BraasDrools;
 import com.araguacaima.braas.core.Constants;
 import com.araguacaima.braas.core.RuleMessageWarning;
@@ -10,6 +9,7 @@ import com.araguacaima.braas.core.drools.DroolsUtils;
 import com.araguacaima.braas.core.exception.InternalBraaSException;
 import com.araguacaima.commons.exception.core.PropertiesUtilException;
 import com.araguacaima.commons.utils.FileUtils;
+import com.araguacaima.commons.utils.JsonSchemaUtils;
 import com.araguacaima.commons.utils.PropertiesHandler;
 import com.araguacaima.commons.utils.StringUtils;
 import com.fasterxml.jackson.annotation.JsonInclude;
@@ -65,7 +65,6 @@ public class ApiController {
             classLoader = new DroolsURLClassLoader(compiledClassesDir.toURI().toURL(), KieBase.class.getClassLoader());
             JsonSchemaUtils<URLClassLoader> jsonSchemaUtils = new JsonSchemaUtils<>(classLoader);
             if (StringUtils.isNotBlank(json)) {
-                //log.info("Processing json: \n" + json);
                 classLoader = jsonSchemaUtils.processFile_(json, null, sourceClassesDir, compiledClassesDir);
             }
         } catch (URISyntaxException | NoSuchFieldException | IllegalAccessException | IOException | InstantiationException e) {

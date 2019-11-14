@@ -127,6 +127,7 @@ public class PropertyRule extends org.jsonschema2pojo.rules.PropertyRule {
                                     Map<String, JDefinedClass> classes = (Map<String, JDefinedClass>) fieldClasses.get(outer1);
                                     classes.forEach((key, value) -> fieldClassesList.add(value.name()));
                                     log.info("#### outer: " + outer1.name() + " | classes before: " + StringUtils.join(fieldClassesList));
+                                    log.info("#### classname: " + className);
                                     classes.remove(className);
                                     fieldClasses.set(outer1, classes);
                                     fieldClassesList.clear();

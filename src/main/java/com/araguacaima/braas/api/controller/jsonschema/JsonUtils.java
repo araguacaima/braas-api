@@ -6,8 +6,7 @@ import org.jsonschema2pojo.SchemaMapper;
 import java.io.File;
 import java.io.IOException;
 
-
-public class JsonUtils extends com.araguacaima.commons.utils.JsonUtils {
+public class JsonUtils {
 
     public void jsonToSourceClassFile(String json, String className, String packageName, File rootDirectory, RuleFactory ruleFactory, org.jsonschema2pojo.SchemaGenerator schemaGenerator) throws IOException {
         JCodeModel codeModel = new JCodeModel();

@@ -18,7 +18,6 @@ package com.araguacaima.braas.api.controller.jsonschema;
 
 import com.araguacaima.commons.utils.PackageClassUtils;
 import com.araguacaima.commons.utils.ReflectionUtils;
-import com.araguacaima.commons.utils.jsonschema.RuleFactory;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
@@ -48,11 +47,9 @@ public class PropertyRule extends org.jsonschema2pojo.rules.PropertyRule {
     private static final ReflectionUtils reflectionUtils = ReflectionUtils.getInstance();
     private final String definitionsRoot;
     private final Map definitions;
-    private final RuleFactory ruleFactory;
 
     PropertyRule(RuleFactory ruleFactory, String definitionsRoot, Map definitions) {
         super(ruleFactory);
-        this.ruleFactory = ruleFactory;
         this.definitionsRoot = definitionsRoot;
         this.definitions = definitions;
     }

@@ -1,6 +1,5 @@
 package com.araguacaima.braas.api.controller.jsonschema;
 
-import com.araguacaima.commons.utils.ReflectionUtils;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
@@ -19,7 +18,6 @@ import java.util.Set;
 
 public class ArrayRule extends org.jsonschema2pojo.rules.ArrayRule {
 
-    private static final ReflectionUtils reflectionUtils = ReflectionUtils.getInstance();
     private String definitionsRoot;
     private Map definitions;
     private RuleFactory ruleFactory;

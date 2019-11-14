@@ -1,6 +1,5 @@
 package com.araguacaima.braas.api.controller.jsonschema;
 
-import com.araguacaima.commons.utils.jsonschema.RuleFactory;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.sun.codemodel.JPackage;
 import com.sun.codemodel.JType;

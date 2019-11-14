@@ -1,7 +1,5 @@
 package com.araguacaima.braas.api.controller.jsonschema;
 
-import com.araguacaima.commons.utils.ReflectionUtils;
-import com.araguacaima.commons.utils.jsonschema.ObjectRule;
 import com.sun.codemodel.JClass;
 import com.sun.codemodel.JDefinedClass;
 import com.sun.codemodel.JPackage;
@@ -19,11 +17,9 @@ import java.util.Map;
 
 public class RuleFactory extends org.jsonschema2pojo.rules.RuleFactory {
 
-    private static final ReflectionUtils reflectionUtils = ReflectionUtils.getInstance();
     private final String definitionsRoot;
     private final Map definitions;
     private final Map<String, JType> generatedTypes = new HashMap<>();
-    /*private final Map<String, JType> generatedClassNames = new HashMap<>();*/
 
     public RuleFactory(GenerationConfig generationConfig, Annotator annotator, SchemaStore schemaStore, String definitionsRoot, Map definitions) throws NoSuchFieldException, IllegalAccessException {
         super(generationConfig, annotator, schemaStore);
@@ -96,18 +92,6 @@ public class RuleFactory extends org.jsonschema2pojo.rules.RuleFactory {
     public void addGeneratedType(String generatedType, JType type) {
         getGeneratedTypes().put(generatedType, type);
     }
-/*
-    public JType getGeneratedClassName(String generatedClassName) {
-        return generatedClassNames.get(generatedClassName);
-    }
 
-    public Map<String, JType> getGeneratedClassNames() {
-        return generatedClassNames;
-    }
-
-    public void addGeneratedClassName(String generatedClassName, JType type) {
-        generatedClassNames.put(generatedClassName, type);
-    }
-*/
 }
 

@@ -11,7 +11,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.*;
 
 @SuppressWarnings("UnusedReturnValue")
-public class JsonSchemaUtils<T extends ClassLoader> extends com.araguacaima.commons.utils.JsonSchemaUtils<T> {
+public class JsonSchemaUtils<T extends ClassLoader> {
 
     public static final String DEFINITIONS_ROOT = "definitions";
     private static final NoopAnnotator noopAnnotator = new NoopAnnotator();
@@ -81,9 +81,10 @@ public class JsonSchemaUtils<T extends ClassLoader> extends com.araguacaima.comm
     private CompilerUtils.FilesCompiler<T> filesCompiler;
 
     public JsonSchemaUtils(T classLoader) {
-        super(classLoader);
+        if (classLoader != null) {
+            filesCompiler = new CompilerUtils.FilesCompiler<>(classLoader);
+        }
     }
-
 
     public T processFile_(File file, String packageName, File sourceCodeDirectory, File compiledClassesDirectory) throws IOException, NoSuchFieldException, IllegalAccessException, URISyntaxException, InstantiationException {
         processFile(file, packageName, sourceCodeDirectory, compiledClassesDirectory);

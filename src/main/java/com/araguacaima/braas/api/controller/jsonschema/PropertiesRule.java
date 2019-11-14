@@ -1,18 +1,14 @@
 package com.araguacaima.braas.api.controller.jsonschema;
 
-import com.araguacaima.commons.utils.jsonschema.RuleFactory;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import com.sun.codemodel.*;
 import org.jsonschema2pojo.Schema;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.util.Iterator;
 
 public class PropertiesRule extends org.jsonschema2pojo.rules.PropertiesRule {
 
-    private static final Logger logger = LoggerFactory.getLogger(com.araguacaima.commons.utils.jsonschema.PropertiesRule.class);
     private final RuleFactory ruleFactory;
 
     PropertiesRule(RuleFactory ruleFactory) {
@@ -41,7 +37,7 @@ public class PropertiesRule extends org.jsonschema2pojo.rules.PropertiesRule {
         for (Iterator<String> properties = node.fieldNames(); properties.hasNext(); ) {
             String property = properties.next();
             JsonNode node1 = node.get(property);
-            JDefinedClass type = ruleFactory.getPropertyRule().apply(property, node1, node, jclass, schema);
+            ruleFactory.getPropertyRule().apply(property, node1, node, jclass, schema);
             if (isComplexType(node1)) {
                 JDefinedClass type1 = (JDefinedClass) jclass.fields().get(property).type().boxify();
                 String generatedClassName = type1.getPackage().name() + "." + type1.name();

@@ -16,6 +16,7 @@
 
 package com.araguacaima.braas.api.controller.jsonschema;
 
+import com.araguacaima.braas.api.common.Commons;
 import com.araguacaima.commons.utils.PackageClassUtils;
 import com.araguacaima.commons.utils.ReflectionUtils;
 import com.fasterxml.jackson.databind.JsonNode;
@@ -127,14 +128,14 @@ public class PropertyRule extends org.jsonschema2pojo.rules.PropertyRule {
                                     Map<String, JDefinedClass> newClasses = new TreeMap<>();
                                     existentClasses.forEach((key, value) -> fieldClassesList.add(value.name()));
                                     log.info("#### outer: " + outer1.name() + " | classes before: " + fieldClassesList);
-                                    log.info("#### classname: " + className);
                                     existentClasses.forEach((key, clazz_) -> {
                                         if (!key.equals(className)) {
                                             newClasses.put(key, clazz_);
                                         }
                                     });
-                                    //existentClasses.clear();
-                                    fieldClasses.set(outer1, newClasses);
+                                    log.info("#### newClasses: " + Commons.jsonUtils.toJSON(newClasses));
+                                    existentClasses.clear();
+                                    existentClasses.putAll(newClasses);
                                     newClasses.forEach((key, value) -> fieldClassesList.add(value.name()));
                                     log.info("#### outer: " + outer1.name() + " | classes after: " + fieldClassesList);
                                 } else {

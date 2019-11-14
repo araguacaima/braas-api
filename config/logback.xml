@@ -30,12 +30,13 @@
     <logger name="org.drools" level="${LOG_LEVEL}" additivity="false">
         <appender-ref ref="STDOUT"/>
     </logger>
-
     <logger name="com.araguacaima.braas.core.RuleLogging" level="TRACE" additivity="false">
         <appender-ref ref="STDOUT"/>
     </logger>
-
-    <logger name="com.araguacaima.commons.utils" level="TRACE" additivity="false">
+    <logger name="com.araguacaima.commons.utils" level="${LOG_LEVEL}" additivity="false">
+        <appender-ref ref="STDOUT"/>
+    </logger>
+    <logger name="com.araguacaima.braas.api.controller.jsonschema" level="TRACE" additivity="false">
         <appender-ref ref="STDOUT"/>
     </logger>
 

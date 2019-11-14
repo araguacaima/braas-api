@@ -29,10 +29,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.lang.reflect.Field;
-import java.util.LinkedHashSet;
 import java.util.Map;
-import java.util.Set;
-import java.util.TreeMap;
 
 
 /**
@@ -118,36 +115,13 @@ public class PropertyRule extends org.jsonschema2pojo.rules.PropertyRule {
                                 packageClasses.setAccessible(true);
                                 Map<String, JDefinedClass> classesNew = (Map<String, JDefinedClass>) packageClasses.get(newPackage);
                                 classesNew.put(className, jDefinedClass);
-                                Set<String> fieldClassesList = new LinkedHashSet<>();
                                 if (outer.isClass()) {
                                     Field fieldClasses = JDefinedClass.class.getDeclaredField("classes");
                                     fieldClasses.setAccessible(true);
                                     JDefinedClass outer1 = (JDefinedClass) outer;
                                     Map<String, JDefinedClass> existentClasses = (Map<String, JDefinedClass>) fieldClasses.get(outer1);
-                                    Map<String, JDefinedClass> newClasses = new TreeMap<>();
-                                    existentClasses.forEach((key, value) -> fieldClassesList.add(value.name()));
-                                    log.info("#### outer: " + outer1.name() + " | existentClasses: " + fieldClassesList);
-                                    log.info("#### className: " + className);
-                                    existentClasses.forEach((key, clazz_) -> {
-                                        log.info("#### key: " + key);
-                                        if (!key.equals(className)) {
-                                            log.info("#### tal");
-                                            newClasses.put(key, clazz_);
-                                        }
-                                    });
-                                    newClasses.forEach((key, value) -> fieldClassesList.add(value.name()));
-                                    log.info("#### tempClasses: " + fieldClassesList);
-                                    existentClasses.clear();
-                                    existentClasses.putAll(newClasses);
-                                    fieldClassesList.clear();
-                                    existentClasses.forEach((key, value) -> fieldClassesList.add(value.name()));
-                                    log.info("#### outer: " + outer1.name() + " | newClasses: " + fieldClassesList);
-                                } else {
-                                    log.info("#### outer '" + ((JPackage) outer).name() + "' is not a class");
+                                    existentClasses.remove(className.toUpperCase());
                                 }
-                                fieldClassesList.clear();
-                                classesNew.forEach((key, value) -> fieldClassesList.add(value.name()));
-                                log.info("#### package: " + newPackage.name() + " | classes: " + StringUtils.join(fieldClassesList));
                             } catch (Throwable t) {
                                 t.printStackTrace();
                             }

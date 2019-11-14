@@ -1,5 +1,6 @@
 package com.araguacaima.braas.api.controller.jsonschema;
 
+import com.araguacaima.braas.api.common.Commons;
 import com.araguacaima.commons.utils.*;
 import com.fasterxml.jackson.databind.exc.MismatchedInputException;
 import org.jsonschema2pojo.*;
@@ -105,7 +106,7 @@ public class JsonSchemaUtils<T extends ClassLoader> {
     public Set<Class<?>> processFile(String json, String packageName, File sourceCodeDirectory, File compiledClassesDirectory) throws IOException, NoSuchFieldException, IllegalAccessException, URISyntaxException, InstantiationException {
         try {
             FileUtils.cleanDirectory(sourceCodeDirectory);
-            Map jsonSchema = jsonUtils.fromJSON(json, Map.class);
+            Map jsonSchema = Commons.jsonUtils.fromJSON(json, Map.class);
             String id = String.valueOf(jsonSchema.get("$id"));
             String className_;
             String packageName_;
@@ -122,7 +123,7 @@ public class JsonSchemaUtils<T extends ClassLoader> {
             RuleFactory ruleFactory = new RuleFactory(config, noopAnnotator, schemaStore, DEFINITIONS_ROOT, definitionMap);
             jsonUtils.jsonToSourceClassFile(json, className_, packageName_, sourceCodeDirectory, ruleFactory, schemaGenerator);
         } catch (MismatchedInputException ignored) {
-            Collection<Map<String, Object>> jsonSchemas = jsonUtils.fromJSON(json, Collection.class);
+            Collection<Map<String, Object>> jsonSchemas = Commons.jsonUtils.fromJSON(json, Collection.class);
             Set<String> ids = new LinkedHashSet<>();
             LinkedHashMap<String, LinkedHashMap> definitionMap = new LinkedHashMap<>();
             jsonSchemas.forEach(jsonSchema -> buildDefinitions(packageName, ids, definitionMap, jsonSchema));
@@ -206,7 +207,7 @@ public class JsonSchemaUtils<T extends ClassLoader> {
                 String packageName = packageClassUtils.getPackageName();
                 Map filteredDefinitions = filterSchema(definitions, id);
                 map.put(DEFINITIONS_ROOT, filteredDefinitions);
-                String json = jsonUtils.toJSON(map);
+                String json = Commons.jsonUtils.toJSON(map);
                 jsonUtils.jsonToSourceClassFile(json, StringUtils.capitalize(className), packageName, rootDirectory, ruleFactory, schemaGenerator);
             }
         }

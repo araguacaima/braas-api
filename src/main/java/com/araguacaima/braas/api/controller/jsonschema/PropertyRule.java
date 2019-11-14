@@ -104,10 +104,8 @@ public class PropertyRule extends org.jsonschema2pojo.rules.PropertyRule {
                 JFieldVar fieldVar = jclass.fields().get(nodeName);
                 if (fieldVar != null) {
                     JType type = fieldVar.type();
-                    String fullyQualifiedClassName = packageClassUtils.getFullyQualifiedClassName();
                     if (type.getClass().isAssignableFrom(JDefinedClass.class)) {
                         JDefinedClass jDefinedClass = (JDefinedClass) type;
-                        JPackage jPackage = jDefinedClass._package();
                         Field fieldOuter = reflectionUtils.getField(JDefinedClass.class, "outer");
                         try {
                             fieldOuter.setAccessible(true);
@@ -122,7 +120,7 @@ public class PropertyRule extends org.jsonschema2pojo.rules.PropertyRule {
                                 classesNew.put(className, jDefinedClass);
                                 Set<String> fieldClassesList = new LinkedHashSet<>();
                                 if (outer.isClass()) {
-                                    Field fieldClasses = reflectionUtils.getField(JDefinedClass.class, "classes");
+                                    Field fieldClasses = JDefinedClass.class.getField("classes");
                                     fieldClasses.setAccessible(true);
                                     JDefinedClass outer1 = (JDefinedClass) outer;
                                     Map<String, JDefinedClass> existentClasses = (Map<String, JDefinedClass>) fieldClasses.get(outer1);

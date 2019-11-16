@@ -43,15 +43,15 @@ public class ApiController {
 
     private static Logger log = LoggerFactory.getLogger(ApiController.class);
 
-    public static URLClassLoader buildClassesFromSchema(BraasDrools braasDrools, File sourceClassesDir, File compiledClassesDir) throws InternalBraaSException {
+    public static URLClassLoader buildClassesFromSchemaFile(BraasDrools braasDrools, File sourceClassesDir, File compiledClassesDir) throws InternalBraaSException {
         try {
             Collection col = braasDrools.getSchemaArray();
             if (col != null) {
-                return buildClassesFromSchema(jsonUtils.toJSON(col), sourceClassesDir, compiledClassesDir);
+                return buildClassesFromSchemaFile(jsonUtils.toJSON(col), sourceClassesDir, compiledClassesDir);
             }
             Map map = braasDrools.getSchemaMap();
             if (map != null) {
-                return buildClassesFromSchema(jsonUtils.toJSON(map), sourceClassesDir, compiledClassesDir);
+                return buildClassesFromSchemaFile(jsonUtils.toJSON(map), sourceClassesDir, compiledClassesDir);
             }
             throw new InternalBraaSException("Incompatible schemas");
         } catch (IOException e) {
@@ -59,7 +59,7 @@ public class ApiController {
         }
     }
 
-    private static URLClassLoader buildClassesFromSchema(String json, File sourceClassesDir, File compiledClassesDir) throws InternalBraaSException {
+    private static URLClassLoader buildClassesFromSchemaFile(String json, File sourceClassesDir, File compiledClassesDir) throws InternalBraaSException {
         URLClassLoader classLoader;
         try {
             classLoader = new DroolsURLClassLoader(compiledClassesDir.toURI().toURL(), KieBase.class.getClassLoader());
@@ -73,7 +73,7 @@ public class ApiController {
         return classLoader;
     }
 
-    public static URLClassLoader buildClassesFromSchema(File schemaFile, File sourceClassesDir, File compiledClassesDir) throws InternalBraaSException {
+    public static URLClassLoader buildClassesFromSchemaFile(File schemaFile, File sourceClassesDir, File compiledClassesDir) throws InternalBraaSException {
         URLClassLoader classLoader;
         try {
             classLoader = new DroolsURLClassLoader(compiledClassesDir.toURI().toURL(), KieBase.class.getClassLoader());
@@ -96,7 +96,22 @@ public class ApiController {
         return classLoader;
     }
 
-    public static URLClassLoader buildClassesFromSchema(File schemaFile, String fileName, File sourceClassesDir, File compiledClassesDir) throws InternalBraaSException {
+    public static URLClassLoader buildClassesFromSchemaStr(String schemaStr, String fileName, File sourceClassesDir, File compiledClassesDir) throws InternalBraaSException {
+        URLClassLoader classLoader;
+        try {
+            classLoader = new DroolsURLClassLoader(compiledClassesDir.toURI().toURL(), KieBase.class.getClassLoader());
+            JsonSchemaUtils<URLClassLoader> jsonSchemaUtils = new JsonSchemaUtils<>(classLoader);
+            if (StringUtils.isNotEmpty(schemaStr)) {
+                String packageName = (Objects.requireNonNull(fileName)).replaceAll("-", ".").replaceAll(" ", ".").toLowerCase();
+                classLoader = jsonSchemaUtils.processFile_(schemaStr, packageName, sourceClassesDir, compiledClassesDir);
+            }
+        } catch (URISyntaxException | NoSuchFieldException | IllegalAccessException | IOException | InstantiationException e) {
+            throw new InternalBraaSException(e);
+        }
+        return classLoader;
+    }
+
+    public static URLClassLoader buildClassesFromSchemaFile(File schemaFile, String fileName, File sourceClassesDir, File compiledClassesDir) throws InternalBraaSException {
         URLClassLoader classLoader;
         try {
             classLoader = new DroolsURLClassLoader(compiledClassesDir.toURI().toURL(), KieBase.class.getClassLoader());

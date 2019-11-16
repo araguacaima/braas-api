@@ -60,7 +60,7 @@ paths:
         - in: formData
           name: schema-file
           type: file
-          required: true
+          required: false
           description:  A file with a json map containing every class schema used within rules.
       responses:
         201:

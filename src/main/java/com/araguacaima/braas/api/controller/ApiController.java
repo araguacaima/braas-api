@@ -378,6 +378,10 @@ public class ApiController {
         enableMultipart(request);
     }
 
+    public static void setPublicNamespace(Request request, Response response) throws IOException, ServletException {
+        enableMultipart(request);
+    }
+
     private static void enableMultipart(Request request) throws IOException, ServletException {
         String contentType = org.apache.commons.lang3.StringUtils.defaultIfBlank(request.headers("Content-Type"), "");
         if (contentType.startsWith("multipart/form-data") || contentType.startsWith("application/x-www-form-urlencoded")) {
@@ -481,12 +485,19 @@ public class ApiController {
 
         public UploadModel invoke() {
             String braasSessionId = (String) ctx.getSessionAttribute(BRAAS_SESSION_ID_PARAM);
-            File tempFile = new File(System.getProperty("java.io.tmpdir"), braasSessionId);
-            if (!tempFile.exists()) {
-                tempFile = FileUtils.createTempDir(braasSessionId);
+            File tempFile;
+            String tempFileDir = System.getProperty("java.io.tmpdir");
+            if (StringUtils.isNotBlank(braasSessionId)) {
+                tempFile = new File(tempFileDir, braasSessionId);
+                if (!tempFile.exists()) {
+                    tempFile = FileUtils.createTempDir(braasSessionId);
+                }
+            } else {
+                tempFile = new File(tempFileDir);
+                if (!tempFile.exists()) {
+                    tempFile = FileUtils.createTempDir(tempFileDir);
+                }
             }
-
-
             uploadDir = new File(tempFile, UPLOAD_DIR);
             uploadDir.mkdir();
             uploadDir.setReadable(true);

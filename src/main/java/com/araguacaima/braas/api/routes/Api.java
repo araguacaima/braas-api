@@ -196,6 +196,7 @@ public class Api implements RouteGroup {
             }
             return Commons.throwError(response, HTTP_INTERNAL_ERROR, new Exception("It was not possible to load your provided schema to be used later in your rule's base"));
         });
+        before(ENCODED_RULES, ApiController::setPublicNamespace);
         post(ENCODED_RULES, (request, response) -> {
             try {
                 final SparkWebContext ctx = new SparkWebContext(request, response);

@@ -122,6 +122,7 @@ public class Server {
         path(Api.ApiFile.PATH, new Api.ApiFile());
         //path(Api.ApiGoogleDrive.PATH, new Api.ApiGoogleDrive());
         path(Api.ApiBinary.PATH, new Api.ApiBinary());
+        path(Api.ApiCsv.PATH, new Api.ApiCsv());
         path(Admin.PATH, new Admin());
         post(EMAIL, (request, response) -> {
             try {

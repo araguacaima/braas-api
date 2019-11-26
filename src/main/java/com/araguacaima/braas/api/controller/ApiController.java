@@ -111,7 +111,29 @@ public class ApiController {
         return classLoader;
     }
 
-    public static DroolsConfig createDroolsConfig(String base64BinarySpreadsheet, URLClassLoader classLoader, DroolsConfig droolsConfig, Constants.URL_RESOURCE_STRATEGIES urlResourceStrategies) throws InternalBraaSException {
+    public static DroolsConfig createDroolsConfigFromCsv(String csv, URLClassLoader classLoader, DroolsConfig droolsConfig, Constants.URL_RESOURCE_STRATEGIES urlResourceStrategies) throws InternalBraaSException {
+        try {
+            if (StringUtils.isNotBlank(csv) && droolsConfig == null) {
+                Properties props;
+                switch (urlResourceStrategies) {
+                    case ABSOLUTE_DECISION_TABLE_PATH:
+                        props = new PropertiesHandler("drools-absolute-path-decision-table.properties", ApiController.class.getClassLoader()).getProperties();
+                        break;
+                    default:
+                        props = new Properties();
+                }
+                droolsConfig = new DroolsConfig(props);
+                droolsConfig.setSpreadsheetCsv(csv);
+                droolsConfig.setUrlResourceStrategy(Constants.URL_RESOURCE_STRATEGIES.CSV_DECISION_TABLE.name());
+            }
+            droolsConfig.setClassLoader(classLoader);
+        } catch (URISyntaxException | PropertiesUtilException | IOException e) {
+            throw new InternalBraaSException(e);
+        }
+        return droolsConfig;
+    }
+
+    public static DroolsConfig createDroolsConfigFromBinary(String base64BinarySpreadsheet, URLClassLoader classLoader, DroolsConfig droolsConfig, Constants.URL_RESOURCE_STRATEGIES urlResourceStrategies) throws InternalBraaSException {
         try {
             if (StringUtils.isNotBlank(base64BinarySpreadsheet) && droolsConfig == null) {
                 Properties props;

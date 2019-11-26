@@ -238,6 +238,59 @@ paths:
         - braas-auth:
             - delete:rule
         - braas-session-id: []
+  /api/rules-base/{braasSessionId}/csv:
+    get:
+      tags:
+        - Rules base
+      summary: Download the rule's base as a csv spreadsheet.
+      description: Download the rule's base you previously uploaded in current session as a csv spreadsheet or non-content if any.
+      operationId: get-scv-rules-base
+      parameters:
+        - $ref: "#/parameters/braas-session"
+      produces:
+        - text/csv
+      responses:
+        200:
+          description: OK
+        204:
+          description: No content
+      security:
+        - braas-auth:
+            - read:base
+        - braas-session-id: []
+    put:
+      tags:
+        - Rules base
+      summary: Add a new or replace the rule's base based on a csv spreadsheet
+      description: Uploads a new rule's base based on a csv spreadsheet if it doesn't previously uploaded, or replaces an existing reference to it. If there is already a rule's base setted this method will overide the remote reference to it. This method will fail if any non-authorized user attempts to use it. The incoming csv data must be comma-separated.
+      operationId: add-or-replace-csv-rules-base
+      consumes:
+        - text/csv
+      parameters:
+        - $ref: "#/parameters/braas-session"
+        - in: body
+          name: rules-base
+          type: string
+          required: true
+          description: Csv spreadsheet information that contains the rule's base and schemas
+      responses:
+        201:
+          description: Created
+        202:
+          description: Accepted
+        401:
+          description: Unauthorized
+        405:
+          description: Invalid input
+        409:
+          description: Conflict
+        424:
+          description: Missing dependencies
+      security:
+        - braas-auth:
+            - write:rule
+            - read:rule
+        - braas-session-id: []
   /api/rules-base/{braasSessionId}/assets:
     post:
       tags:
@@ -307,20 +360,27 @@ paths:
       tags:
         - Utils
       summary: Returns a Base64 encoded string from a Spreadsheet
-      description: Returns a Base64 encoded string from a Spreadsheet. This kind of string is useful for calling PUT /api/rules-base/binary method
+      description: Returns a Base64 encoded string from a Spreadsheet. The resulting string is useful for calling PUT /api/rules-base/binary method
       operationId: create-encoded-rules
       consumes:
         - multipart/form-data
         - application/x-www-form-urlencoded
+        - application/json
       produces:
         - text/plain
       parameters:
         - in: formData
           name: spreadsheet
           type: file
-          required: true
-          description: The spreadsheet file on which the rules resides
+          required: false
+          description: The spreadsheet file on which the rules resides. If absent, rules-base parameter should be provided
           x-mimetype: application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.google-apps.spreadsheet
+        - in: body
+          name: rules-base
+          schema:
+            $ref: "#/definitions/binary-model"
+          required: false
+          description: Binary spreadsheet information that contains the rule's base and schemas. If absent, spreadsheet parameter should be provided
       responses:
         200:
           description: OK

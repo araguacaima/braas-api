@@ -92,12 +92,23 @@ public class BraasDrools {
         //Base64 binary spreadsheet bytes array information that contains the rule's base
         private String binary;
 
+        //String with whole comma-separated csv spreadsheet content
+        private String csv;
+
         public String getBinary() {
             return binary;
         }
 
         public void setBinary(String binary) {
             this.binary = binary;
+        }
+
+        public String getCsv() {
+            return csv;
+        }
+
+        public void setCsv(String csv) {
+            this.csv = csv;
         }
     }
 }

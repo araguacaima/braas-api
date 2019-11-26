@@ -266,11 +266,13 @@ paths:
       operationId: add-or-replace-csv-rules-base
       consumes:
         - text/csv
+        - text/plain
       parameters:
         - $ref: "#/parameters/braas-session"
         - in: body
           name: rules-base
-          type: string
+          schema:
+            type: string
           required: true
           description: Csv spreadsheet information that contains the rule's base and schemas
       responses:

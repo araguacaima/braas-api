@@ -117,7 +117,7 @@ public class ApiController {
                 Properties props;
                 switch (urlResourceStrategies) {
                     case ABSOLUTE_DECISION_TABLE_PATH:
-                        props = new PropertiesHandler("drools-absolute-path-decision-table.properties", ApiController.class.getClassLoader()).getProperties();
+                        props = new PropertiesHandler("drools-csv-absolute-path-decision-table.properties", ApiController.class.getClassLoader()).getProperties();
                         break;
                     default:
                         props = new Properties();

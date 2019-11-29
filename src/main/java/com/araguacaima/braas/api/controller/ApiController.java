@@ -367,12 +367,12 @@ public class ApiController {
         }
         final SparkWebContext ctx = new SparkWebContext(request, response);
         if (braasSessionId == null) {
-            braasSessionId = (String) ctx.getSessionAttribute(BRAAS_SESSION_ID_PARAM);
+            braasSessionId = (String) ctx.getRequest().getSession().getAttribute(BRAAS_SESSION_ID_PARAM);
             if (braasSessionId == null) {
                 braasSessionId = UUID.randomUUID().toString();
             }
         }
-        ctx.setSessionAttribute(BRAAS_SESSION_ID_PARAM, braasSessionId);
+        ctx.getRequest().getSession().setAttribute(BRAAS_SESSION_ID_PARAM, braasSessionId);
         enableMultipart(request);
     }
 
@@ -386,17 +386,17 @@ public class ApiController {
         if (braasSessionId != null) {
             braasDrools = buildBraasDrools(braasSessionId, ctx);
         } else {
-            braasSessionId = (String) ctx.getSessionAttribute(BRAAS_SESSION_ID_PARAM);
+            braasSessionId = (String) ctx.getRequest().getSession().getAttribute(BRAAS_SESSION_ID_PARAM);
             if (braasSessionId == null) {
                 braasSessionId = UUID.randomUUID().toString();
             }
-            ctx.setSessionAttribute(BRAAS_SESSION_ID_PARAM, braasSessionId);
-            braasDrools = (BraasDrools) ctx.getSessionAttribute(BRAAS_DROOLS_PARAM);
+            ctx.getRequest().getSession().setAttribute(BRAAS_SESSION_ID_PARAM, braasSessionId);
+            braasDrools = (BraasDrools) ctx.getRequest().getSession().getAttribute(BRAAS_DROOLS_PARAM);
             if (braasDrools == null) {
                 braasDrools = fixNamespace(braasSessionId);
             }
         }
-        ctx.setSessionAttribute(BRAAS_DROOLS_PARAM, braasDrools);
+        ctx.getRequest().getSession().setAttribute(BRAAS_DROOLS_PARAM, braasDrools);
         enableMultipart(request);
     }
 
@@ -427,12 +427,12 @@ public class ApiController {
 
     public static BraasDrools buildBraasDrools(String braasSessionId, SparkWebContext ctx) {
         BraasDrools braasDrools;
-        String storedBraasSessionId = (String) ctx.getSessionAttribute(BRAAS_SESSION_ID_PARAM);
+        String storedBraasSessionId = (String) ctx.getRequest().getSession().getAttribute(BRAAS_SESSION_ID_PARAM);
         if (!braasSessionId.equals(storedBraasSessionId)) {
-            ctx.setSessionAttribute(BRAAS_SESSION_ID_PARAM, braasSessionId);
+            ctx.getRequest().getSession().setAttribute(BRAAS_SESSION_ID_PARAM, braasSessionId);
             braasDrools = fixNamespace(braasSessionId);
         } else {
-            braasDrools = (BraasDrools) ctx.getSessionAttribute(BRAAS_DROOLS_PARAM);
+            braasDrools = (BraasDrools) ctx.getRequest().getSession().getAttribute(BRAAS_DROOLS_PARAM);
             if (braasDrools == null) {
                 braasDrools = fixNamespace(braasSessionId);
             }
@@ -464,7 +464,7 @@ public class ApiController {
         }
 
         public RuleBaseModel invoke() {
-            String braasSessionId = (String) ctx.getSessionAttribute(BRAAS_SESSION_ID_PARAM);
+            String braasSessionId = (String) ctx.getRequest().getSession().getAttribute(BRAAS_SESSION_ID_PARAM);
             File tempFile = new File(System.getProperty("java.io.tmpdir"), braasSessionId);
             if (!tempFile.exists()) {
                 tempFile = FileUtils.createTempDir(braasSessionId);
@@ -506,7 +506,7 @@ public class ApiController {
         }
 
         public UploadModel invoke() {
-            String braasSessionId = (String) ctx.getSessionAttribute(BRAAS_SESSION_ID_PARAM);
+            String braasSessionId = (String) ctx.getRequest().getSession().getAttribute(BRAAS_SESSION_ID_PARAM);
             File tempFile;
             String tempFileDir = System.getProperty("java.io.tmpdir");
             if (StringUtils.isNotBlank(braasSessionId)) {

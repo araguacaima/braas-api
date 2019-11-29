@@ -62,9 +62,9 @@ public class AdminAPIFilter implements Filter {
 
         assertNotNull("securityLogic", securityLogic);
         assertNotNull("config", config);
-        final SparkWebContext context = new SparkWebContext(request, response, config.getSessionStore());
+        final SparkWebContext webContext = new SparkWebContext(request, response, config.getSessionStore());
         Object result;
-        CommonProfile profile = findAndFulfillProfile(context);
+        CommonProfile profile = findAndFulfillProfile(webContext);
         if (profile != null) {
             Account account = null;
             String email = profile.getEmail();
@@ -76,8 +76,8 @@ public class AdminAPIFilter implements Filter {
                 throw halt();
             }
         }
-        result = securityLogic.perform(context, this.config,
-                (ctx, parameters) -> SECURITY_GRANTED_ACCESS, config.getHttpActionAdapter(),
+        result = securityLogic.perform(webContext, this.config,
+                (ctx, profiles, parameters) -> SECURITY_GRANTED_ACCESS, config.getHttpActionAdapter(),
                 this.clients, this.authorizers, this.matchers, this.multiProfile);
         if (result == SECURITY_GRANTED_ACCESS) {
             // It means that the access is granted: continue

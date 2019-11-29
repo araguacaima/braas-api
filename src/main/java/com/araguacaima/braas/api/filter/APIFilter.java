@@ -62,8 +62,8 @@ public class APIFilter implements Filter {
 
         assertNotNull("securityLogic", securityLogic);
         assertNotNull("config", config);
-        final SparkWebContext context = new SparkWebContext(request, response, config.getSessionStore());
-        findAndFulfillProfile(context);
+        final SparkWebContext webContext = new SparkWebContext(request, response, config.getSessionStore());
+        findAndFulfillProfile(webContext);
         Object result;
         HttpMethod requestedHttpMethod = HttpMethod.get(request.requestMethod().toLowerCase());
         CheckHttpMethodAuthorizer checkHttpMethodAuthorizer = (CheckHttpMethodAuthorizer) config.getAuthorizers().get("checkHttpMethodAuthorizer");
@@ -71,41 +71,41 @@ public class APIFilter implements Filter {
         if (requestedHttpMethod.equals(HttpMethod.get)) {
             checkHttpMethodAuthorizer.setElements(HttpConstants.HTTP_METHOD.GET);
             requireAnyRoleAuthorizer.setElements(Commons.ADMIN_ROLE, Commons.READ_MODELS_ROLE, Commons.READ_CATALOGS_ROLE, Commons.READ_PALETTES_ROLE);
-            result = securityLogic.perform(context, this.config,
-                    (ctx, parameters) -> SECURITY_GRANTED_ACCESS, config.getHttpActionAdapter(),
+            result = securityLogic.perform(webContext, this.config,
+                    (ctx, profiles, parameters) -> SECURITY_GRANTED_ACCESS, config.getHttpActionAdapter(),
                     this.clients, this.authorizers, this.matchers, this.multiProfile);
             checkHttpMethodAuthorizer.getElements().remove(HttpConstants.HTTP_METHOD.GET);
         } else if (requestedHttpMethod.equals(HttpMethod.post)) {
             checkHttpMethodAuthorizer.setElements(HttpConstants.HTTP_METHOD.POST);
             requireAnyRoleAuthorizer.setElements(Commons.ADMIN_ROLE, Commons.WRITE_MODEL_ROLE, Commons.WRITE_CATALOG_ROLE, Commons.WRITE_PALETTE_ROLE);
-            result = securityLogic.perform(context, this.config,
-                    (ctx, parameters) -> SECURITY_GRANTED_ACCESS, config.getHttpActionAdapter(),
+            result = securityLogic.perform(webContext, this.config,
+                    (ctx, profiles, parameters) -> SECURITY_GRANTED_ACCESS, config.getHttpActionAdapter(),
                     this.clients, this.authorizers, this.matchers, this.multiProfile);
             checkHttpMethodAuthorizer.getElements().remove(HttpConstants.HTTP_METHOD.POST);
         } else if (requestedHttpMethod.equals(HttpMethod.patch)) {
             checkHttpMethodAuthorizer.setElements(HttpConstants.HTTP_METHOD.PATCH);
             requireAnyRoleAuthorizer.setElements(Commons.ADMIN_ROLE, Commons.WRITE_MODEL_ROLE, Commons.WRITE_CATALOG_ROLE, Commons.WRITE_PALETTE_ROLE);
-            result = securityLogic.perform(context, this.config,
-                    (ctx, parameters) -> SECURITY_GRANTED_ACCESS, config.getHttpActionAdapter(),
+            result = securityLogic.perform(webContext, this.config,
+                    (ctx, profiles, parameters) -> SECURITY_GRANTED_ACCESS, config.getHttpActionAdapter(),
                     this.clients, this.authorizers, this.matchers, this.multiProfile);
             checkHttpMethodAuthorizer.getElements().remove(HttpConstants.HTTP_METHOD.PATCH);
         } else if (requestedHttpMethod.equals(HttpMethod.put)) {
             checkHttpMethodAuthorizer.setElements(HttpConstants.HTTP_METHOD.PUT);
             requireAnyRoleAuthorizer.setElements(Commons.ADMIN_ROLE, Commons.WRITE_MODEL_ROLE, Commons.WRITE_CATALOG_ROLE, Commons.WRITE_PALETTE_ROLE);
-            result = securityLogic.perform(context, this.config,
-                    (ctx, parameters) -> SECURITY_GRANTED_ACCESS, config.getHttpActionAdapter(),
+            result = securityLogic.perform(webContext, this.config,
+                    (ctx, profiles, parameters) -> SECURITY_GRANTED_ACCESS, config.getHttpActionAdapter(),
                     this.clients, this.authorizers, this.matchers, this.multiProfile);
             checkHttpMethodAuthorizer.getElements().remove(HttpConstants.HTTP_METHOD.PUT);
         } else if (requestedHttpMethod.equals(HttpMethod.delete)) {
             checkHttpMethodAuthorizer.setElements(HttpConstants.HTTP_METHOD.DELETE);
             requireAnyRoleAuthorizer.setElements(Commons.ADMIN_ROLE, Commons.DELETE_MODEL_ROLE, Commons.DELETE_CATALOG_ROLE, Commons.DELETE_PALETTE_ROLE);
-            result = securityLogic.perform(context, this.config,
-                    (ctx, parameters) -> SECURITY_GRANTED_ACCESS, config.getHttpActionAdapter(),
+            result = securityLogic.perform(webContext, this.config,
+                    (ctx, profiles, parameters) -> SECURITY_GRANTED_ACCESS, config.getHttpActionAdapter(),
                     this.clients, this.authorizers, this.matchers, this.multiProfile);
             checkHttpMethodAuthorizer.getElements().remove(HttpConstants.HTTP_METHOD.DELETE);
         } else {
-            result = securityLogic.perform(context, this.config,
-                    (ctx, parameters) -> SECURITY_GRANTED_ACCESS, config.getHttpActionAdapter(),
+            result = securityLogic.perform(webContext, this.config,
+                    (ctx, profiles, parameters) -> SECURITY_GRANTED_ACCESS, config.getHttpActionAdapter(),
                     this.clients, this.authorizers, this.matchers, this.multiProfile);
         }
         if (result == SECURITY_GRANTED_ACCESS) {

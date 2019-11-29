@@ -106,7 +106,7 @@ public class Authentication {
                 }
                 queryParamsMap.toMap().forEach((key, value) -> {
                     if (key.equals("scope")) {
-                        context.setSessionAttribute("scope", value);
+                        context.getRequest().getSession().setAttribute("scope", value);
                     }
                     if (!key.equals("redirect_uri")) {
                         queryParams.append(key).append("=").append(StringUtils.join(value)).append("&");
@@ -115,8 +115,8 @@ public class Authentication {
             } else {
                 url.append(req.uri());
             }
-            context.setSessionAttribute("originalRequest", url.toString());
-            context.setSessionAttribute("originalQueryParams", queryParams.toString());
+            context.getRequest().getSession().setAttribute("originalRequest", url.toString());
+            context.getRequest().getSession().setAttribute("originalQueryParams", queryParams.toString());
             return buildModelAndView(map, "/login");
 
         }

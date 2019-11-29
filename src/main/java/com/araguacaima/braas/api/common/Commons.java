@@ -375,7 +375,7 @@ public class Commons {
     public static CommonProfile findAndFulfillProfile(SparkWebContext context) {
         CommonProfile profile = IterableUtils.find(getProfiles(context), object -> clients.contains(object.getClientName()));
         if (profile != null) {
-            Account account = (Account) context.getSessionAttribute("account");
+            Account account = (Account) context.getRequest().getSession().getAttribute("account");
             if (account != null) {
                 account.getRoles().forEach(role -> profile.addRole(role.getName()));
             } else {
@@ -439,7 +439,7 @@ public class Commons {
 
                 profile.addRoles(RolesWrapper.fromRoles(accountRoles));
 
-                context.setSessionAttribute("account", account);
+                context.getRequest().getSession().setAttribute("account", account);
             }
         }
     }

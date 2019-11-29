@@ -62,10 +62,10 @@ public class ScopesFilter implements Filter {
 
         assertNotNull("securityLogic", securityLogic);
         assertNotNull("config", config);
-        final SparkWebContext context = new SparkWebContext(request, response, config.getSessionStore());
-        CommonProfile profile = findAndFulfillProfile(context);
+        final SparkWebContext webContext = new SparkWebContext(request, response, config.getSessionStore());
+        CommonProfile profile = findAndFulfillProfile(webContext);
         Object result;
-        String[] scope = (String[]) context.getSessionAttribute("scope");
+        String[] scope = (String[]) webContext.getRequest().getSession().getAttribute("scope");
         Set<String> scopes = null;
         if (scope != null) {
             FilterAllRolesAuthorizer<?> filterAllRolesAuthorizer = (FilterAllRolesAuthorizer) config.getAuthorizers().get("filterAllRolesAuthorizer");
@@ -77,8 +77,8 @@ public class ScopesFilter implements Filter {
             scopes = new HashSet<>(scopesList);
             filterAllRolesAuthorizer.setElements(scopes);
         }
-        result = securityLogic.perform(context, this.config,
-                (ctx, parameters) -> SECURITY_GRANTED_ACCESS, config.getHttpActionAdapter(),
+        result = securityLogic.perform(webContext, this.config,
+                (ctx, profiles, parameters) -> SECURITY_GRANTED_ACCESS, config.getHttpActionAdapter(),
                 this.clients, this.authorizers, this.matchers, this.multiProfile);
         if (result == SECURITY_GRANTED_ACCESS) {
             // It means that the access is granted: continue

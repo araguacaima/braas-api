@@ -28,7 +28,7 @@ public class SessionFilter implements Filter {
         SparkWebContext context = new SparkWebContext(request, response);
         CommonProfile profile = Commons.findAndFulfillProfile(context);
         if (profile != null) {
-            Account account = (Account) context.getSessionAttribute("account");
+            Account account = (Account) context.getRequest().getSession().getAttribute("account");
             if (account == null) {
                 Map<String, Object> param = new HashMap<>();
                 param.put(Account.PARAM_EMAIL, profile.getEmail());
@@ -48,7 +48,7 @@ public class SessionFilter implements Filter {
                     sessionMap = new SessionMap(request.session(), true);
                     SessionFilter.map.put(email, sessionMap);
                 }
-                context.setSessionAttribute("account", account);
+                context.getRequest().getSession().setAttribute("account", account);
             }
         }
     }

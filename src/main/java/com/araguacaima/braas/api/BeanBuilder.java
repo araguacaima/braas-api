@@ -175,7 +175,7 @@ public class BeanBuilder {
     public void fixAccountInfo(Request request, Response response) {
         if (request != null && response != null) {
             final SparkWebContext context = new SparkWebContext(request, response);
-            appendAccountInfo((Account) context.getSessionAttribute("account"));
+            appendAccountInfo((Account) context.getRequest().getSession().getAttribute("account"));
         }
     }
 

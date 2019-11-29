@@ -1,8 +1,8 @@
 package com.araguacaima.braas.api.common;
 
 import org.pac4j.core.client.Client;
-import org.pac4j.core.client.Clients;
 import org.pac4j.core.config.Config;
+import org.pac4j.core.context.Pac4jConstants;
 import org.pac4j.core.exception.HttpAction;
 import org.pac4j.sparkjava.SparkWebContext;
 import spark.ModelAndView;
@@ -33,7 +33,7 @@ public class Security {
 
     public static ModelAndView forceLogin(final Config config, final Request request, final Response response) {
         final SparkWebContext context = new SparkWebContext(request, response);
-        final String clientName = context.getRequestParameter(Clients.DEFAULT_CLIENT_NAME_PARAMETER);
+        final String clientName = context.getRequestParameter(Pac4jConstants.DEFAULT_CLIENT_NAME_PARAMETER);
         final Client client = config.getClients().findClient(clientName);
         HttpAction action;
         try {

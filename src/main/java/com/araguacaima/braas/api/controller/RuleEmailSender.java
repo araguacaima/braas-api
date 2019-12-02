@@ -27,6 +27,8 @@ public class RuleEmailSender {
     private static final Logger log = LoggerFactory.getLogger(RuleEmailSender.class);
 
     /**
+     * @param message The message to be sent
+     *
      * Sends an email from a fired rule
      */
     public static void send(final String message) {
@@ -34,6 +36,8 @@ public class RuleEmailSender {
     }
 
     /**
+     * @param message The message to be sent
+     * @param parameters Optional parameter to configure mail sending engine
      * Sends an email from a fired rule
      */
     public static void send(final String message, final Map<String, Object> parameters) {
